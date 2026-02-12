@@ -1,3 +1,5 @@
+import numpy as np
+from ExperimentalSetup.Robot import Robot
 import socket
 import time
 import sys
@@ -7,7 +9,7 @@ import math
 class RobotCamera:
 
     ##############################################################################
-    def __init__(self, robot_IP, robot_PORT, filenameInput):
+    def __init__(self, robot_IP, robot_PORT, filenameInput, robot3D):
 
         #Technical stuff
         self.HEADER = '\033[95m'
@@ -20,6 +22,9 @@ class RobotCamera:
         self.robot_IP = robot_IP
         self.robot_PORT = robot_PORT
         self.fileName = filenameInput
+
+        #3D model
+        self.robot3D = robot3D
 
         #Show off
         self.showBanner()
@@ -39,6 +44,23 @@ class RobotCamera:
         self.sendMessage('STOP')
         self.exit()
 
+    ##############################################################################
+    def getHolePosition(self):
+
+        return np.asarray([0,0])
+
+    ##############################################################################
+    def getCalibrationHole(self):
+
+        self.takePic()
+        
+        #Function that implements here the coordinates of the hole in 2D
+        point2D = getHolePosition()
+        if not point2D:
+            printError('None hole was found in this camera position')
+            return point2D
+        point3D = self.robot3D.cameraProjectionToPoint3D(point2D)
+        return point3D
 
     ##############################################################################
     def takePic(self):
