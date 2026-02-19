@@ -6,10 +6,36 @@ from RobotBrain.RobotController import RobotController
 from ExperimentalSetup.Camera import Camera
 from ExperimentalSetup.Robot import Robot
 
+# Units
+mm = 1
+
+# Constants
+# TODO - Check this value and units
+Z_MOVE = 182 * mm  
 
 def Calibration():
+    # I need a list with the pin positions, in x,y,z or j1,j2,j3
+    pin_positions = [(x1,y1,z1),]
+    pin_center = []
+    # Move the robot to initial position, at least correct z
+    robot_position = robotcontroller.getPositionXYZ()
+    robotcontroller.goTo(robot_position[0], robot_position[1], Z_MOVE, v)
+    
+    for (ix, iy, iz) in pin_positions:
+        # Move to position in 2 steps, first fixed Z then go down. Take pic. Go up
+        robot_position = robotcontroller.getPositionXYZ()
+        robotcontroller.goTo(ix, iy, robot_position[2], v)
+        robot_position = robotcontroller.getPositionXYZ()
+        robotcontroller.goTo(robot_position[0], robot_position[1], iz, v)
+        robot_position = robotcontroller.getPositionXYZ()
 
-    return True    
+        # TODO Function to retrieve calibration
+        x, y, z = RobotCamera.GiveMeCalibrationPoint(ix, iy, iz)
+        pin_center.append((x, y, z))
+        # Go up again
+        robotcontroller.goTo(robot_position[0], robot_position[1], Z_MOVE, v)
+        robot_position = robotcontroller.getPositionXYZ()
+    return True
 
 def Assembly():
 

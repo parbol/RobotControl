@@ -201,21 +201,38 @@ class RobotController:
         self.sendMessage(cadena)
         data = self.getMessage()
         self.decodeMessage(data)
-        # if data == 'OK':
-        #     return True
-        # else:
-        #     self.printError('Unexpected message from CS9')
-        #     sys.exit()
-        # return True
-    ##############################################################################
 
+        # Check the robot is in the desire position
+        # XXX - Do I need to add some tolerance?
+        if self.position_xyz == [x, y, z]:
+            return True
+        else:
+            self.printError(f'Robot position ({self.position}) does not match the required position ({[x, y, z]})')
+            self.exit()
+            return False
+    ##############################################################################
   
     ##############################################################################
-    def getPosition(self):
-        
+    def askPosition(self):
+
         self.sendMessage('?')
         data = self.getMessage()
         self.decodeMessage(data)
         return True
     ##############################################################################
-       
+
+    ##############################################################################
+    # Getters                                                                   ##
+    ##############################################################################
+
+    def getPositionXYZ(self):
+        return self.position_xyz
+    def getPositionJ1J2J3(self):
+        return self.position_j1j2j3
+    def getValveStatus(self):
+        return self.valves
+    def getEM(self):
+        return self.em
+
+    ##############################################################################
+
