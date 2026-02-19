@@ -12,6 +12,7 @@ import time
 import sys
 import os
 import math
+import re
 
 class RobotController:
 
@@ -24,6 +25,7 @@ class RobotController:
         self.OKGREEN = '\033[92m'
         self.FAIL = '\033[91m'
         self.ENDC = '\033[0m'
+        self.msg_length = 512
         
         #Information for the client
         self.device = device
@@ -41,6 +43,12 @@ class RobotController:
 
         self.printLog('Connection established')
 
+        # Initialize robot control variables
+        self.position_xyz = None
+        self.position_j1j2j3 = None
+        self.valves = None
+        self.em = None
+
         #Do the handshake
         if not self.handshake():
             self.exit()
@@ -57,13 +65,14 @@ class RobotController:
         self.sendMessage('HI SERVER')
         
         data = self.getMessage()
-        if data == 'HI CLIENT':
-            self.printLog('Server says ' + data)
-            self.sendMessage('HANDSHAKE CONFIRMED')
-            return True
-        else:
-            self.printError('Server Handshake response is not valid')
-            self.exit()
+        self.decodeMessage(data)
+        # if data == 'HI CLIENT':
+        #     self.printLog('Server says ' + data)
+        #     self.sendMessage('HANDSHAKE CONFIRMED')
+        #     return True
+        # else:
+        #     self.printError('Server Handshake response is not valid')
+        #     self.exit()
     ##############################################################################
 
     ##############################################################################
@@ -112,22 +121,60 @@ class RobotController:
         counter = 0
         text = ''
         while True:
-            msg = self.serial.rad(512)
+            msg = self.serial.rad(self.msg_length)
             text = text + msg.decode()
             counter = counter + len(msg)
-            if counter == 512:
+            if counter == slf.msg_length:
                 break
-        return text[0:text.find('XXXXX')]
+        # Message is of the form: "@@@@@POS:....ANGLES:.....VALVES:....EM:...."
+        message = text[text.find('@@@@@'):text.find('XXXXX')]
+        return message
+    #############################################################################
+
+    #############################################################################
+    def decodeMessage(self, msg):
+        """
+        Decodes messages received from the robot
+        They must have the form: "POS:....ANGLES:.....VALVES:10001..EM:1"
+        where ... are signed numbers +2.4-32+56
+        VALVES return a binary number with 1 meanning open and 0 closed
+        EM return 1 bit with 1 meanning on and 0 off
+        """
+        pattern = r'POS:(.*?)ANGLES:(.*?)VALVES:(.*?)EM:(.*)'
+        match = re.search(pattern, msg)
+
+        if not match:
+            self.printError(f"Recived message of the robot {msg} does not have expected syntax")
+            self.exit()
+
+        pos_str, angles_str, valves_str, em_str = match.groups()
+        pos = extract_numbers(pos_str)
+        angles = extract_numbers(angles_str)
+        # XXX - Check how the valve and EM status are sent, with or without sign?
+        valves = extract_numbers(valves_str)
+        em = extract_numbers(em_str)
+        self.position_xyz = pos
+        self.position_j1j2j3 = angles
+        self.valves = valves
+        self.em = em
+        return True
     #############################################################################
     
+    #############################################################################
+    def extract_numbers(self, s):
+        return [float(x) for x in re.findall(r'[+-]?\d+(?:\.\d+)?', s)]
+    #############################################################################
 
     ##############################################################################
     def sendMessage(self, msg):
 
-        if len(msg) >= 512-5:
+        if len(msg) >= self.msg_length-10:
             return False 
-        for i in range(len(msg), 512):
-            msg += 'X'
+        # Message structure: "@@@@@COMMAND:RelatedInfo_______...XXXXX
+        msg = 5*'@' + msg
+        for i in range(len(msg), self.msg_length-5):
+            msg += '_'
+        msg += 5*'X'
         self.serial.write(msg.encode())
         return True
     ##############################################################################
@@ -139,7 +186,7 @@ class RobotController:
         xs = str(x)
         ys = str(y)
         zs = str(z)
-        vx = str(z)
+        vs = str(v)
         if x >= 0:
             xs = '+' + xs
         if y >= 0:
@@ -151,15 +198,24 @@ class RobotController:
 
         cadena = f'GOTO:{xs}{ys}{zs}{vs})'
         
-        sel.sendMessage(cadena)
+        self.sendMessage(cadena)
         data = self.getMessage()
-        if data == 'OK':
-            return True
-        else:
-            self.printError('Unexpected message from CS9')
-            sys.exit()
-        return True
+        self.decodeMessage(data)
+        # if data == 'OK':
+        #     return True
+        # else:
+        #     self.printError('Unexpected message from CS9')
+        #     sys.exit()
+        # return True
     ##############################################################################
 
   
-
+    ##############################################################################
+    def getPosition(self):
+        
+        self.sendMessage('?')
+        data = self.getMessage()
+        self.decodeMessage(data)
+        return True
+    ##############################################################################
+       
