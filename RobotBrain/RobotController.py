@@ -192,21 +192,24 @@ class RobotController:
     ##############################################################################
 
     ##############################################################################
-    def goTo(self, x, y, z):
+    def goTo(self, x, y, z, rz, orientation):
 
         xs = str(x)
         ys = str(y)
         zs = str(z)
+        rzs = str(rz)
         if x >= 0:
             xs = '+' + xs
         if y >= 0:
             ys = '+' + ys
         if z >= 0:
             zs = '+' + zs
+        if rz >= 0:
+            rzs = '+' + rzs
         if self.velocity >= 0:
             vs = '+' + str(self.velocity)
 
-        cadena = f'GOTO:{xs}{ys}{zs}{vs})'
+        cadena = f'GOTO:{xs}{ys}{zs}{rzs}{vs}{orientation})'
         
         self.sendMessage(cadena)
         data = self.getMessage()
