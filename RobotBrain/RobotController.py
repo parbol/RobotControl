@@ -25,7 +25,7 @@ class RobotController:
         self.OKGREEN = '\033[92m'
         self.FAIL = '\033[91m'
         self.ENDC = '\033[0m'
-        self.msg_length = 512
+        self.msg_length = 128
         
         #Information for the client
         self.device = device
@@ -49,6 +49,8 @@ class RobotController:
         self.valves = None
         self.em = None
 
+        # Set robot velocity as a percentage of the setted value in the GUI
+        self.velocity = 100
         #Do the handshake
         if not self.handshake():
             self.exit()
@@ -57,6 +59,8 @@ class RobotController:
     def stop(self):
         self.sendMessage('STOP')
         self.exit()
+
+    ##############################################################################
 
     ##############################################################################
     def handshake(self):
@@ -151,12 +155,10 @@ class RobotController:
         pos = extract_numbers(pos_str)
         angles = extract_numbers(angles_str)
         # XXX - Check how the valve and EM status are sent, with or without sign?
-        valves = extract_numbers(valves_str)
-        em = extract_numbers(em_str)
+        self.valves = int(valves_str)
+        self.em = int(em_str)
         self.position_xyz = pos
         self.position_j1j2j3 = angles
-        self.valves = valves
-        self.em = em
         return True
     #############################################################################
     
@@ -178,23 +180,31 @@ class RobotController:
         self.serial.write(msg.encode())
         return True
     ##############################################################################
-
   
     ##############################################################################
-    def goTo(self, x, y, z, v):
+    def changeVelocity(self, v):
+        if v >= 0 and v<=100:
+            self.velocity = v
+            return True
+        else:
+            printError(f"Velocity must be between 0 and 100, it is {v}")
+            return False
+    ##############################################################################
+
+    ##############################################################################
+    def goTo(self, x, y, z):
 
         xs = str(x)
         ys = str(y)
         zs = str(z)
-        vs = str(v)
         if x >= 0:
             xs = '+' + xs
         if y >= 0:
             ys = '+' + ys
         if z >= 0:
             zs = '+' + zs
-        if v >= 0:
-            vs = '+' + vs
+        if self.velocity >= 0:
+            vs = '+' + str(self.velocity)
 
         cadena = f'GOTO:{xs}{ys}{zs}{vs})'
         
