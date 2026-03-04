@@ -141,8 +141,6 @@ class RobotController:
         # Message is of the form: "@@@@@POS:....ANGLES:.....VALVES:....EM:...."
         message = text[text.find('@@@@@')+5:text.find('XXXXX')]
         print(message)
-        # Error message start with [ERROR]
-        # Read it and log it differently
         return message
     #############################################################################
 
@@ -190,7 +188,6 @@ class RobotController:
         for i in range(len(msg), self.msg_length-5):
             msg += '_'
         msg += 5*'X'
-        print(msg)
         self.serial.write(msg.encode())
         return True
     ##############################################################################
@@ -223,7 +220,7 @@ class RobotController:
         if self.velocity >= 0:
             vs = '+' + str(self.velocity)
 
-        cadena = f'MOVE-TO:{xs}{ys}{zs}{rzs}{vs}{orientation}'
+        cadena = f'MOVE-TO:{xs}{ys}{zs}{rzs}{vs}{orientation})'
         
         self.sendMessage(cadena)
         data = self.getMessage()

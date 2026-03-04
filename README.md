@@ -26,3 +26,10 @@ This package contains a model of the table, robot and physical camera. It basica
 
 This should have the executables implementing the calibration and assembly workflows.
 
+## How to work with it?
+1) Start class
+'''
+rc = RobotController.RobotController("/dev/ttyUSB1", 115200, "")
+'''
+2) Start connection in Robot tablet
+3) Send wanted message
