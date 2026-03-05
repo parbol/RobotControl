@@ -17,7 +17,7 @@ import re
 class RobotController:
 
     ##############################################################################
-    def __init__(self, device, bauds, robot3D):
+    def __init__(self, device, bauds, robot3D, debug = False):
 
         #Technical stuff
         self.HEADER = '\033[95m'
@@ -25,7 +25,9 @@ class RobotController:
         self.OKGREEN = '\033[92m'
         self.FAIL = '\033[91m'
         self.ENDC = '\033[0m'
+        self.WARNING = '\033[93m'
         self.msg_length = 128
+        self.debug = debug
         
         #Information for the client
         self.device = device
@@ -39,7 +41,6 @@ class RobotController:
 
         #Create connection
         self.serial = serial.Serial(self.device, self.bauds, timeout=1)
-        # self.serial.open()
 
         self.printLog('Connection established')
 
@@ -51,36 +52,26 @@ class RobotController:
 
         # Set robot velocity as a percentage of the setted value in the GUI
         self.velocity = 100
-        #Do the handshake
+        # Do the handshake
         if not self.handshake():
             print("Closing")
             self.exit()
-        
-    ##############################################################################
-    def stop(self):
-        self.sendMessage('STOP')
-        self.exit()
-
     ##############################################################################
 
     ##############################################################################
     def handshake(self):
         
         self.printLog('Starting handshake')
-        # self.sendMessage('HI SERVER')
         
         data = self.getMessage()
-        print(data)
+        self.printDebug(data)
         self.decodeMessage(data)
-        print(f"position = {self.position_xyz}")
-        return True
-        # if data == 'HI CLIENT':
-        #     self.printLog('Server says ' + data)
-        #     self.sendMessage('HANDSHAKE CONFIRMED')
-        #     return True
-        # else:
-        #     self.printError('Server Handshake response is not valid')
-        #     self.exit()
+        self.printDebug(f"position = {self.position_xyz}")
+        if self.position_xyz is not None and self.position_j1j2j3 is not None and \
+            self.valves is not None and self.em is not None:
+            return True
+        else:
+            return False
     ##############################################################################
 
     ##############################################################################
@@ -96,9 +87,21 @@ class RobotController:
     ##############################################################################
 
     ##############################################################################
+    def printWarning(self, text):
+
+        print(self.WARNING + '[Warning] ' + text + self.ENDC)
+    ##############################################################################
+
+    ##############################################################################
     def printCom(self, text):
 
         print(self.OKBLUE + text + self.ENDC)
+    ##############################################################################
+
+    ##############################################################################
+    def printDebug(self, text):
+        if self.debug:
+            print(f"[DEBUG]: {text}")
     ##############################################################################
 
     ##############################################################################
@@ -129,21 +132,25 @@ class RobotController:
         counter = 0
         text = ''
         while True:
-            print(f"Counter = {counter}")
-            print(f"Text read = {text}")
+            self.printDebug(f"Counter = {counter}")
+            self.printDebug(f"Text read = {text}")
             msg = self.serial.read(self.msg_length)
-            print(f"msg = {msg}")
+            self.printDenug(f"msg = {msg}")
             text = text + msg.decode()
             counter = counter + len(msg)
-            print(f"Counter after msg = {counter}")
+            self.printDebug(f"Counter after msg = {counter}")
             if counter == self.msg_length:
                 break
         # Message is of the form: "@@@@@POS:....ANGLES:.....VALVES:....EM:...."
         message = text[text.find('@@@@@')+5:text.find('XXXXX')]
-        print(message)
+        self.printDebug(message)
         # Error message start with [ERROR]
         # Read it and log it differently
-        return message
+        if message.startwith("[ERROR]"):
+            self.decodeErrorMessage(message)
+            return False
+        else:
+            return message
     #############################################################################
 
     #############################################################################
@@ -166,15 +173,20 @@ class RobotController:
         pos_str, angles_str, valves_str, em_str = match.groups()
         pos = self.extract_numbers(pos_str)
         angles = self.extract_numbers(angles_str)
-        # XXX - Check how the valve and EM status are sent, with or without sign?
-        self.valves = int(valves_str)
-        self.em = int(em_str[0])
-        print(f"pos = {pos}")
+        self.valves = valves_str
+        self.em = em_str[0]
         self.position_xyz = pos
         self.position_j1j2j3 = angles
         return True
     #############################################################################
     
+    #############################################################################
+    def decodeErrorMessage(self, message):
+        # TODO - Try to recover certain errors?
+        self.printError(message)
+        self.exit()
+    #############################################################################
+
     #############################################################################
     def extract_numbers(self, s):
         return [float(x) for x in re.findall(r'[+-]?\d+(?:\.\d+)?', s)]
@@ -201,8 +213,12 @@ class RobotController:
             self.velocity = v
             return True
         else:
-            printError(f"Velocity must be between 0 and 100, it is {v}")
+            self.printError(f"Velocity must be between 0 and 100, it is {v}")
             return False
+    ##############################################################################
+
+    ##############################################################################
+    # Robot functions                                                           ##
     ##############################################################################
 
     ##############################################################################
@@ -238,12 +254,119 @@ class RobotController:
             self.exit()
             return False
     ##############################################################################
-  
-  # Function to implement SET-EM(1 binario, NOTHING, SET-VALVES(20 binario 0 cerrado 1 abierto), STOP (corta programa), WAIT-USER (interaccion con la tablet) WAIT-TIME(int segindos)
-    ##############################################################################
-    def askPosition(self):
 
-        self.sendMessage('?')
+    ##############################################################################
+    def setEM(self, status):
+        """
+        Set ElectroMagnet Status. 
+        Parameters:
+        ---------------------------
+            status: int
+                0 or 1. 0 meaning Off and 1 meaning On
+        """
+        status_str = str(status)
+        if status_str not in ('0','1'):
+            self.printError(f'Not valid status of the electromagnet, it can be 0 or 1 and required status is {status_str}')
+            return False
+        
+        cadena = f'SET-EM:{status_str}'
+        self.sendMessage(cadena)
+        data = self.getMessage()
+        self.decodeMessage(data)
+        # Check the EM is in the desire status
+        if self.em == status:
+            return True
+        else:
+            self.printError(f'Electromagnet status ({self.em}) does not match the required status ({status})')
+            self.exit()
+            return False
+    ##############################################################################
+
+    ##############################################################################
+    def setValves(self, status):
+        """
+        Set ElectroMagnet Status. 
+        Parameters:
+        ---------------------------
+            status: int
+                20 bits together, 1 per valve in the system. 0 or 1. 0 meaning Off and 1 meaning On
+        """
+        status_str = str(status)
+        if len(status_str) !=20 or any(c not in '01' for c in status_str):
+            self.printError(f'Not valid status of the valves, it can be 0 or 1 and required status is {status_str}')
+            return False
+        
+        cadena = f'SET-VALVES:{status_str}'
+        self.sendMessage(cadena)
+        data = self.getMessage()
+        self.decodeMessage(data)
+        # Check the EM is in the desire status
+        if self.valves == status_str:
+            return True
+        else:
+            self.printError(f'Valves status ({self.valves}) does not match the required status ({status})')
+            self.exit()
+            return False
+    ##############################################################################
+
+    ##############################################################################
+    def stop(self):
+        self.sendMessage('STOP')
+        self.exit()
+    ##############################################################################
+
+    ##############################################################################
+    def wait_user(self):
+        """
+        Waits until the user interacts with the tablet GUI of the robot
+        """
+        self.sendMessage('WAIT-USER')
+        data = self.getMessage()
+        self.decodeMessage(data)
+        return True
+    ##############################################################################
+
+    ##############################################################################
+    def wait_time(self, seconds: int):
+        """
+        Waits a certain time until the robot sends the STATUS message back. It keeps the robot-pc connection open"
+        Parameters:
+            seconds : int
+                Seconds to wait
+        """
+        if isinstance(seconds, int):
+            pass
+        elif isinstance(seconds, float):
+            seconds_int = int(seconds)
+            self.printWarning(f"Wait time must be an integer, given a float ({seconds}), converted to int ({seconds_int}).")
+            seconds = seconds_int
+        elif isinstance(seconds, str):
+            try:
+                seconds = int(seconds)
+                self.printWarning(f"Wait time must be an integer, given a str, converted to int ({seconds}).")
+
+            except (ValueError, TypeError):
+                self.printError(f'Wait time must be an integer. Given: {seconds}')
+                self.exit()
+                return False
+        else:
+            self.printError(f'Wait time must be numeric. Given {seconds}, {type(seconds)}')
+            self.exit()
+        if seconds < 0:
+            self.printError(f'Wait time must be positive. Given: {seconds}')
+            self.exit()
+            return False
+
+        message = f'WAIT-TIME:{seconds}'
+        self.sendMessage(message)
+        data = self.getMessage()
+        self.decodeMessage(data)
+        return True
+    ##############################################################################
+
+    ##############################################################################
+    def askStatus(self):
+        self.sendMessage('NOTHING')
         data = self.getMessage()
         self.decodeMessage(data)
         return True
