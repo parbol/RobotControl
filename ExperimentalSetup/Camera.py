@@ -1,5 +1,5 @@
 import numpy as np
-from src.EulerRotation import EulerRotation
+from ExperimentalSetup.EulerRotation import EulerRotation
 
 class Camera:
 

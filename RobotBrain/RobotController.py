@@ -65,7 +65,8 @@ class RobotController:
         
         data = self.getMessage()
         self.printDebug(data)
-        self.decodeMessage(data)
+        if not self.decodeMessage(data):
+            return False
         self.printDebug(f"position = {self.position_xyz}")
         if self.position_xyz is not None and self.position_j1j2j3 is not None and \
             self.valves is not None and self.em is not None:
@@ -135,7 +136,7 @@ class RobotController:
             self.printDebug(f"Counter = {counter}")
             self.printDebug(f"Text read = {text}")
             msg = self.serial.read(self.msg_length)
-            self.printDenug(f"msg = {msg}")
+            self.printDebug(f"msg = {msg}")
             text = text + msg.decode()
             counter = counter + len(msg)
             self.printDebug(f"Counter after msg = {counter}")
@@ -146,7 +147,7 @@ class RobotController:
         self.printDebug(message)
         # Error message start with [ERROR]
         # Read it and log it differently
-        if message.startwith("[ERROR]"):
+        if message.startswith("[ERROR]"):
             self.decodeErrorMessage(message)
             return False
         else:
@@ -168,7 +169,7 @@ class RobotController:
 
         if not match:
             self.printError(f"Received message of the robot *{msg}* does not have expected syntax")
-            self.exit()
+            return False
 
         pos_str, angles_str, valves_str, em_str = match.groups()
         pos = self.extract_numbers(pos_str)
@@ -243,15 +244,15 @@ class RobotController:
         
         self.sendMessage(cadena)
         data = self.getMessage()
-        self.decodeMessage(data)
+        if not self.decodeMessage(data):
+            self.printError(f'There was a problem decoding the message from the Robot')
+            return False
 
         # Check the robot is in the desire position
-        # XXX - Do I need to add some tolerance?
-        if self.position_xyz == [x, y, z]:
+        if (self.position_xyz[0] - x)**2 + (self.position_xyz[1] - y)**2 + (self.position_xyz[2] - z)**2 < 0.01^2: 
             return True
         else:
             self.printError(f'Robot position ({self.position_xyz}) does not match the required position ({[x, y, z]})')
-            self.exit()
             return False
     ##############################################################################
 
