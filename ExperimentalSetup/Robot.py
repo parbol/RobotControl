@@ -2,9 +2,9 @@ import numpy as np
 import sys
 import math as math
 from matplotlib.animation import FuncAnimation, writers
-from src.Camera import Camera
-from src.EulerRotation import EulerRotation
-from src.Table import Table
+from ExperimentalSetup.Camera import Camera
+from ExperimentalSetup.EulerRotation import EulerRotation
+from ExperimentalSetup.Table import Table
 
 ####################################################################
 # Some definitions                                                 #

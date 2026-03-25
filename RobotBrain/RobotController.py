@@ -107,6 +107,7 @@ class RobotController:
     ##############################################################################
     def exit(self):
         self.printLog('Closing connection')
+        
         self.serial.close()
         sys.exit()
     ##############################################################################
@@ -135,7 +136,7 @@ class RobotController:
             self.printDebug(f"Counter = {counter}")
             self.printDebug(f"Text read = {text}")
             msg = self.serial.read(self.msg_length)
-            self.printDenug(f"msg = {msg}")
+            self.printDebug(f"msg = {msg}")
             text = text + msg.decode()
             counter = counter + len(msg)
             self.printDebug(f"Counter after msg = {counter}")
@@ -146,7 +147,7 @@ class RobotController:
         self.printDebug(message)
         # Error message start with [ERROR]
         # Read it and log it differently
-        if message.startwith("[ERROR]"):
+        if message.startswith("[ERROR]"):
             self.decodeErrorMessage(message)
             return False
         else:
