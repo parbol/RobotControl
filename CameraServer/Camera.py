@@ -29,6 +29,7 @@ class Camera:
         self.filename = filename
 
         self.device_descriptors = None
+        self.device_descriptor = None
         self.device = None
         self.remote_device_nodemap = None
         self.datastream = None
