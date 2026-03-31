@@ -19,13 +19,59 @@ class CircleFitter(GenericLikelihoodModel):
         """
         self.n = int(len(exog))
         
+        if self.n < 20:
+            raise Exception('npoints', 'badnumber')
+
+
         self.exog = np.asarray(exog)
         self.endog = np.asarray(endog)
+        
+        a, b = self.estimateCenter()
         self.a = 400 
         self.b = -200
-        self.r = (np.max([(max(self.exog)-min(self.exog)), (max(self.endog)-min(self.endog))]))
+        self.r = 800
 
         super(CircleFitter, self).__init__(endog, exog, **kwds)  
+
+
+    def straightline(self, i, j):
+
+        x1 = self.exog[i]
+        y1 = self.endog[i]
+        x2 = self.exog[j]
+        y2 = self.endog[j]
+
+        mx1 = (x1 + x2) / 2.0
+        my1 = (y1 + y2) / 2.0
+        vx1 = (x2 - x1)
+        vy1 = (y2 - y1)
+        ox1 = -vy1
+        oy1 = vx1
+        o = math.sqrt(ox1**2+oy1**2)
+        ox1 = ox1 / o
+        oy1 = oy1 / o
+
+        return mx1, my1, ox1, oy1
+
+
+
+
+
+    def estimateCenter(self):
+
+        p1 = 2
+        p2 = int(self.n/2)
+        p3 = self.n - 2
+
+        x3 = self.exog[p3]
+        y3 = self.endog[p3]
+
+
+
+
+
+            
+
 
     def loglike(self, params):
         #  Se actualizan los parámetros
