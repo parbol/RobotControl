@@ -12,18 +12,34 @@ class ProcessCalibrationPoint:
         self.imageName = imageName
         self.height = 0
         self.width = 0
+        #Technical stuff
+        self.HEADER = '\033[95m'
+        self.OKBLUE = '\033[94m'
+        self.OKGREEN = '\033[92m'
+        self.FAIL = '\033[91m'
+        self.ENDC = '\033[0m'
+        self.WARNING = '\033[93m'
+        self.printLog('Start calibration point')
 
     def fit(self):
         
+        self.printLog('Starting the fit with image ' + self.imageName)
+        
+        #Figure 
+        fig, axs = plt.subplots(1, 3, figsize=(20, 10))
+        
+        #Reading and transforming image
         img = cv2.imread(self.imageName)
         self.img_height, self.img_width = img.shape[:2]
-
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         
+        axs[0].imshow(gray, cmap='gray')
+        axs[0].set_title('Original image')
+       
+        #Getting the main contour
         _, thresh = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY_INV)
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         largest_contour = max(contours, key=cv2.contourArea)
-
         xv = []
         yv = []
         filteredpoints = []
@@ -34,29 +50,33 @@ class ProcessCalibrationPoint:
                 xv.append(x)
                 yv.append(y)
 
-        cal = CircleFitter(xv, yv)
-        results = cal.fit()
-
-        print(results.summary())
-        print(results.params)
-        a, b, r = results.params
-
+        #Drawing the main contour
         filteredpoints = np.array(filteredpoints, dtype=np.int32)
         mask = np.zeros_like(gray)
         cv2.drawContours(mask, [filteredpoints], -1, 255, -1)
-
-        # Crear fondo blanco
         background = np.ones_like(img) * 255
         final = np.where(mask[:,:,None] == 255, img, background)
-        fig2, ax2 = plt.subplots(figsize=(20, 20))
-        ax2.imshow(final, cmap='gray')
-        circle = plt.Circle((a,b), r, color='blue', fill='false')
-        ax2.add_patch(circle)
-        ax2.axis('off')
-        plt.show()
-        print(f"Centro del círculo: (x={cx}, y={cy})")
-        print(f"Centro del círculo: (x={a}, y={b}), radius={r}")
+        axs[1].imshow(final, cmap='gray')
+        axs[1].set_title('Contour selection')
 
+        #Making the fit
+        results = []
+        try:
+            cal = CircleFitter(xv, yv)
+            results = cal.fit()
+        except:
+            return 0, 0, False
+
+        a, b, r = results.params
+
+        #Drawing final
+        circle = plt.Circle((a,b), r, color='blue', fill='false')
+        axs[2].add_patch(circle)
+        axs[2].imshow(final, cmap='gray')
+        axs[2].set_title('Final circle')
+        plt.show()
+        print(f"Centro del círculo: (x={a}, y={b}), radius={r}")
+        return a, b, True
 
     def is_on_border(self, x, y):
         
@@ -65,4 +85,33 @@ class ProcessCalibrationPoint:
         else:
             return False
 
+    ##############################################################################
+    def printLog(self, text):
+
+        print(self.OKGREEN + '[Log] ' + text + self.ENDC)
+    ##############################################################################
+
+    ##############################################################################
+    def printError(self, text):
+
+        print(self.FAIL + '[Error] ' + text + self.ENDC)
+    ##############################################################################
+
+    ##############################################################################
+    def printWarning(self, text):
+
+        print(self.WARNING + '[Warning] ' + text + self.ENDC)
+    ##############################################################################
+
+    ##############################################################################
+    def printCom(self, text):
+
+        print(self.OKBLUE + text + self.ENDC)
+    ##############################################################################
+
+    ##############################################################################
+    def printDebug(self, text):
+        if self.debug:
+            print(f"[DEBUG]: {text}")
+    ##############################################################################
 
