@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 from ImageAnalysis.CircleFitter import CircleFitter
-
+import math
 
 
 class ProcessCalibrationPoint:
@@ -68,15 +68,53 @@ class ProcessCalibrationPoint:
             return 0, 0, False
 
         a, b, r = results.params
+        print(f"Centro del círculo: (x={a}, y={b}), radius={r}")
+        
+        xv2, yv2 = self.checkMinError(a, b, r, xv, yv)
+        results2 = []
+        try:
+            cal2 = CircleFitter(xv2, yv2)
+            results2 = cal2.fit()
+        except:
+            return 0, 0, False
 
+        a, b, r = results2.params
+        print(f"Centro del círculo: (x={a}, y={b}), radius={r}")
+        
         #Drawing final
         circle = plt.Circle((a,b), r, color='blue', fill='false')
         axs[2].add_patch(circle)
         axs[2].imshow(final, cmap='gray')
         axs[2].set_title('Final circle')
         plt.show()
-        print(f"Centro del círculo: (x={a}, y={b}), radius={r}")
         return a, b, True
+
+
+    def checkMinError(self, a, b, r, xv, yv):
+
+        d = 0
+        maxd = 0
+        for i in range(len(xv)):
+            phi = math.atan2(yv[i]-b, xv[i]-a)
+            x = a + r * math.cos(phi)
+            y = b + r * math.sin(phi)
+            di = math.sqrt((xv[i]-x)**2 + (yv[i]-y)**2)
+            if di > maxd:
+                maxd = di
+            d = d + di
+        d = d / len(xv)
+        xv2 = []
+        yv2 = []
+        for i in range(len(xv)):
+            phi = math.atan2(yv[i]-b, xv[i]-a)
+            x = a + r * math.cos(phi)
+            y = b + r * math.sin(phi)
+            di = math.sqrt((xv[i]-x)**2 + (yv[i]-y)**2)
+            if di < 2.0*d:
+                xv2.append(xv[i])
+                yv2.append(yv[i])
+        return xv2, yv2
+
 
     def is_on_border(self, x, y):
         

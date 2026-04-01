@@ -29,9 +29,7 @@ class CircleFitter(GenericLikelihoodModel):
         self.a = a 
         self.b = -b
         self.r = 800
-
         super(CircleFitter, self).__init__(endog, exog, **kwds)  
-
 
     def straightLine(self, i, j):
 
@@ -53,7 +51,6 @@ class CircleFitter(GenericLikelihoodModel):
 
         return mx1, my1, ox1, oy1, True
 
-
     def centerTwoLines(self, i, j, k, l):
 
         mx1, my1, ox1, oy1, valid1 = self.straightLine(i, j)
@@ -69,8 +66,6 @@ class CircleFitter(GenericLikelihoodModel):
         x = mx1 + l * ox1
         y = my1 + l * oy1
         return x, y, True 
-
-
 
     def estimateCenter(self):
 
@@ -97,7 +92,6 @@ class CircleFitter(GenericLikelihoodModel):
         
         return xc / n, yc / n 
 
-
     def loglike(self, params):
         #  Se actualizan los parámetros
         self.a = params[0]
@@ -108,7 +102,7 @@ class CircleFitter(GenericLikelihoodModel):
 
         for i in range(0, self.n):
             chi2 += np.abs(((self.exog[i]-self.a)**2 + (self.endog[i]-self.b)**2 - self.r**2))
-
+        
         return -chi2
 
     def fit(self, start_params=None, method='nm', maxiter=10000, **kwargs):
