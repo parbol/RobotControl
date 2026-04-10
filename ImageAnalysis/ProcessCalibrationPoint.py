@@ -37,7 +37,8 @@ class ProcessCalibrationPoint:
         axs[0].set_title('Original image')
        
         #Getting the main contour
-        _, thresh = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY_INV)
+        #_, thresh = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY_INV)
+        _, thresh = cv2.threshold(gray, 130, 255, cv2.THRESH_BINARY_INV)
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         largest_contour = max(contours, key=cv2.contourArea)
         xv = []

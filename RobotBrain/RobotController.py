@@ -17,7 +17,7 @@ import re
 class RobotController:
 
     ##############################################################################
-    def __init__(self, device, bauds, robot3D, debug = False):
+    def __init__(self, device, bauds, camera, robot3D, debug = False):
 
         #Technical stuff
         self.HEADER = '\033[95m'
@@ -33,6 +33,9 @@ class RobotController:
         self.device = device
         self.bauds = bauds
 
+        #Camera model
+        self.camera = camera
+        
         #Robot3D model
         self.robot3D = robot3D
 
@@ -108,7 +111,7 @@ class RobotController:
     ##############################################################################
     def exit(self):
         self.printLog('Closing connection')
-        
+        self.camera.stop() 
         self.serial.close()
         sys.exit()
     ##############################################################################
@@ -250,7 +253,7 @@ class RobotController:
             return False
 
         # Check the robot is in the desire position
-        if (self.position_xyz[0] - x)**2 + (self.position_xyz[1] - y)**2 + (self.position_xyz[2] - z)**2 < 0.01^2: 
+        if (self.position_xyz[0] - x)**2 + (self.position_xyz[1] - y)**2 + (self.position_xyz[2] - z)**2 < 0.01**2: 
             return True
         else:
             self.printError(f'Robot position ({self.position_xyz}) does not match the required position ({[x, y, z]})')
@@ -313,7 +316,7 @@ class RobotController:
 
     ##############################################################################
     def stop(self):
-        self.sendMessage('STOP')
+        self.sendMessage('STOP:')
         self.exit()
     ##############################################################################
 
