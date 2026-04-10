@@ -10,38 +10,6 @@ from ExperimentalSetup.Table import Table
 # Units
 mm = 1
 
-# Constants
-# TODO - Check this value and units
-Z_MOVE = 182 * mm  
-
-def Calibration():
-    # I need a list with the pin positions, in x,y,z or j1,j2,j3
-    pin_positions = [(x1,y1,z1),]
-    pin_center = []
-    # Move the robot to initial position, at least correct z
-    robot_position = robotcontroller.getPositionXYZ()
-    robotcontroller.goTo(robot_position[0], robot_position[1], Z_MOVE, v)
-    
-    for (ix, iy, iz) in pin_positions:
-        # Move to position in 2 steps, first fixed Z then go down. Take pic. Go up
-        robot_position = robotcontroller.getPositionXYZ()
-        robotcontroller.goTo(ix, iy, robot_position[2], v)
-        robot_position = robotcontroller.getPositionXYZ()
-        robotcontroller.goTo(robot_position[0], robot_position[1], iz, v)
-        robot_position = robotcontroller.getPositionXYZ()
-
-        # TODO Function to retrieve calibration
-        x, y, z = RobotCamera.GiveMeCalibrationPoint(ix, iy, iz)
-        pin_center.append((x, y, z))
-        # Go up again
-        robotcontroller.goTo(robot_position[0], robot_position[1], Z_MOVE, v)
-        robot_position = robotcontroller.getPositionXYZ()
-    return True
-
-def Assembly():
-
-    return True
-
 
 if __name__ == "__main__":
     
@@ -50,6 +18,7 @@ if __name__ == "__main__":
     parser.add_option("-p", "--port",            dest="port",            type=int,       default=8080,             help="Port of the server.")
     parser.add_option("-d", "--device",          dest="device",          type='string',  default='/dev/ttyUSB0',     help="Device name")
     parser.add_option("-b", "--bauds",           dest="bauds",           type=int,       default=115200,             help="Bauds")
+    parser.add_option("-n", "--npic",           dest="npic",           type=int,       default=50,             help="N pictures")
     (options, args) = parser.parse_args()
 
     ################Initilize 3D setup model
@@ -86,20 +55,8 @@ if __name__ == "__main__":
     #Initialize Camera
     robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)
     
-    #Initialize Robot
-    robotcontroller = RobotController(options.device, options.bauds, robotCamera, robot3D, True)
-
-    robotcontroller.goTo(375.23, -67.06, 133.23, -72.234)
-    robotcontroller.camera.takePic()
-    robotcontroller.stop()
-
-    #########################################################################
-    #En este punto ya podemos tomar fotos y también podemos mover el robot ##
-    #########################################################################
-
-    #Necesitamos 2 workflows
-    #1.- Calibración -> Método Calibration()
-    # Function -> x, y, z = robotCamera.GiveMeCalibrationPoint(x, y, z) 
-    #2.- Ensamblaje
-
+    for i in range(0, options.npic):
+        print('Picture number', i)
+        robotCamera.takePic()
+    robotCamera.stop()
 
