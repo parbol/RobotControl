@@ -279,7 +279,7 @@ class RobotController:
         data = self.getMessage()
         self.decodeMessage(data)
         # Check the EM is in the desire status
-        if self.em == status:
+        if str(self.em) == str(status):
             return True
         else:
             self.printError(f'Electromagnet status ({self.em}) does not match the required status ({status})')
