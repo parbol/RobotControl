@@ -5,7 +5,7 @@ import ImageAnalysis.ProcessCalibrationPoint as ProcessCalibrationPoint
 
 if __name__=='__main__':
 
-    p = ProcessCalibrationPoint.ProcessCalibrationPoint('picture.png')
+    p = ProcessCalibrationPoint.ProcessCalibrationPoint('picture2.png')
     x, y, valid = p.fit()
 
 

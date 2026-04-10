@@ -1,0 +1,13 @@
+ 
+sudo sh -c 'echo "machine repo.ids-imaging.com/ubuntu login parbol@ifca.unican.es password PAT99999ito+" > /etc/apt/auth.conf.d/ids-peak-repo.conf'
+sudo touch /etc/apt/sources.list.d/ids-peak-repo.list
+sudo sh -c 'echo "deb [signed-by=/usr/local/share/keyrings/ids-archive-keyring.gpg] https://repo.ids-imaging.com/ubuntu noble main" > /etc/apt/sources.list.d/ids-peak-repo.list'
+sudo apt-get update
+wget --http-user=parbol@ifca.unican.es --http-password=PAT99999ito+ https://repo.ids-imaging.com/ids.pgp | sudo gpg --dearmor > /usr/local/share/keyrings/ids-archive-keyring.gpg
+gpg --dearmor ids.pgp
+sudo mkdir /usr/local/share/keyrings
+sudo mv ids.pgp.gpg /usr/local/share/keyrings/ids-archive-keyring.gpg
+sudo apt-get update
+sudo apt-get install ids-peak-with-ueyetl #Not really need it I believe
+sudo apt-get install ids-peak
+
