@@ -6,6 +6,7 @@ from RobotBrain.RobotController import RobotController
 from ExperimentalSetup.Camera import Camera
 from ExperimentalSetup.Robot import Robot
 from ExperimentalSetup.Table import Table
+import numpy as np
 
 # Units
 mm = 1
@@ -13,34 +14,6 @@ mm = 1
 # Constants
 # TODO - Check this value and units
 Z_MOVE = 182 * mm  
-
-def Calibration():
-    # I need a list with the pin positions, in x,y,z or j1,j2,j3
-    pin_positions = [(x1,y1,z1),]
-    pin_center = []
-    # Move the robot to initial position, at least correct z
-    robot_position = robotcontroller.getPositionXYZ()
-    robotcontroller.goTo(robot_position[0], robot_position[1], Z_MOVE, v)
-    
-    for (ix, iy, iz) in pin_positions:
-        # Move to position in 2 steps, first fixed Z then go down. Take pic. Go up
-        robot_position = robotcontroller.getPositionXYZ()
-        robotcontroller.goTo(ix, iy, robot_position[2], v)
-        robot_position = robotcontroller.getPositionXYZ()
-        robotcontroller.goTo(robot_position[0], robot_position[1], iz, v)
-        robot_position = robotcontroller.getPositionXYZ()
-
-        # TODO Function to retrieve calibration
-        x, y, z = RobotCamera.GiveMeCalibrationPoint(ix, iy, iz)
-        pin_center.append((x, y, z))
-        # Go up again
-        robotcontroller.goTo(robot_position[0], robot_position[1], Z_MOVE, v)
-        robot_position = robotcontroller.getPositionXYZ()
-    return True
-
-def Assembly():
-
-    return True
 
 
 if __name__ == "__main__":
@@ -88,9 +61,20 @@ if __name__ == "__main__":
     
     #Initialize Robot
     robotcontroller = RobotController(options.device, options.bauds, robotCamera, robot3D, True)
+    tool_pos = [-332.36, 173.79, 94,-161.17]
+    # Get current pos
+    pos = robotcontroller.getPositionXYZ()
+    # Go to safe z
+    robotcontroller.goTo(pos[0], pos[1], 180, pos[3])
+    # Move to correct x,y with safe z
+    robotcontroller.goTo(tool_pos[0], tool_pos[1], 180, tool_pos[3])
+    # Go down
+    robotcontroller.goTo(tool_pos[0], tool_pos[1], tool_pos[2], tool_pos[3])
+    # Turn on EM
+    robotcontroller.setEM(1)
+    # Go up again
+    robotcontroller.goTo(tool_pos[0], tool_pos[1], 180, tool_pos[3])
 
-    robotcontroller.goTo(375.23, -67.06, 133.23, -72.234)
-    robotcontroller.camera.takePic()
     robotcontroller.stop()
 
     #########################################################################

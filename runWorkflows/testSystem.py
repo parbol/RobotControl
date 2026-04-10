@@ -6,6 +6,7 @@ from RobotBrain.RobotController import RobotController
 from ExperimentalSetup.Camera import Camera
 from ExperimentalSetup.Robot import Robot
 from ExperimentalSetup.Table import Table
+import numpy as np
 
 # Units
 mm = 1
@@ -13,34 +14,6 @@ mm = 1
 # Constants
 # TODO - Check this value and units
 Z_MOVE = 182 * mm  
-
-def Calibration():
-    # I need a list with the pin positions, in x,y,z or j1,j2,j3
-    pin_positions = [(x1,y1,z1),]
-    pin_center = []
-    # Move the robot to initial position, at least correct z
-    robot_position = robotcontroller.getPositionXYZ()
-    robotcontroller.goTo(robot_position[0], robot_position[1], Z_MOVE, v)
-    
-    for (ix, iy, iz) in pin_positions:
-        # Move to position in 2 steps, first fixed Z then go down. Take pic. Go up
-        robot_position = robotcontroller.getPositionXYZ()
-        robotcontroller.goTo(ix, iy, robot_position[2], v)
-        robot_position = robotcontroller.getPositionXYZ()
-        robotcontroller.goTo(robot_position[0], robot_position[1], iz, v)
-        robot_position = robotcontroller.getPositionXYZ()
-
-        # TODO Function to retrieve calibration
-        x, y, z = RobotCamera.GiveMeCalibrationPoint(ix, iy, iz)
-        pin_center.append((x, y, z))
-        # Go up again
-        robotcontroller.goTo(robot_position[0], robot_position[1], Z_MOVE, v)
-        robot_position = robotcontroller.getPositionXYZ()
-    return True
-
-def Assembly():
-
-    return True
 
 
 if __name__ == "__main__":
@@ -88,9 +61,52 @@ if __name__ == "__main__":
     
     #Initialize Robot
     robotcontroller = RobotController(options.device, options.bauds, robotCamera, robot3D, True)
-
-    robotcontroller.goTo(375.23, -67.06, 133.23, -72.234)
-    robotcontroller.camera.takePic()
+    # # HDI
+    # z_pos  = np.linspace(128.3, 128.5, 10)
+    # x_pos  = np.linspace(396.5, 398, 15)
+    # y_pos  = np.linspace(-102.5, -100, 15)
+    # print('*'*150)
+    # print(x_pos, y_pos,z_pos)
+    # for ix in x_pos:
+    #     for iy in y_pos:
+    #         for iz in z_pos:
+    #             robotcontroller.goTo(ix, iy, iz, -72.226)
+    #             pos = robotcontroller.getPositionXYZ()
+    #             x = pos[0]
+    #             y = pos[1]
+    #             z = pos[2]
+    #             robotcontroller.camera.changeFileName(f'PicturesHDI/picture_X{x}Y{y}Z{z}.png')
+    #             robotcontroller.camera.takePic()
+    # LGAD
+    # z_pos  = np.linspace(127.2, 127.5, 10)
+    # x_pos  = np.linspace(362.5, 364, 10)
+    # y_pos  = np.linspace(-159.5, -158, 10)
+    # print('*'*150)
+    # print(x_pos, y_pos,z_pos)
+    # for ix in x_pos:
+    #     for iy in y_pos:
+    #         for iz in z_pos:
+    #             robotcontroller.goTo(ix, iy, iz, -72.226)
+    #             pos = robotcontroller.getPositionXYZ()
+    #             x = pos[0]
+    #             y = pos[1]
+    #             z = pos[2]
+    #             robotcontroller.camera.changeFileName(f'PicturesLGAD/picture_X{x}Y{y}Z{z}.png')
+    #             robotcontroller.camera.takePic()
+    # ETROC
+    z_pos  = np.linspace(127, 128.0, 1001)
+    x_pos  = 377.0
+    y_pos  = -161.5
+    print('*'*150)
+    print(x_pos, y_pos,z_pos)
+    for iz in z_pos:
+        robotcontroller.goTo(x_pos, y_pos, iz, -72.226)
+        pos = robotcontroller.getPositionXYZ()
+        x = pos[0]
+        y = pos[1]
+        z = pos[2]
+        robotcontroller.camera.changeFileName(f'PicturesETROC-ZScan/picture_X{x:.4f}Y{y:.4f}Z{z:.4f}.png')
+        robotcontroller.camera.takePic()
     robotcontroller.stop()
 
     #########################################################################
