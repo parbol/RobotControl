@@ -261,6 +261,40 @@ class RobotController:
     ##############################################################################
 
     ##############################################################################
+    def moveJ(self, j1, j2, j3, j4):
+
+        j1s = str(j1)
+        j2s = str(j2)
+        j3s = str(j3)
+        j4s = str(j4)
+        if j1 >= 0:
+            j1s = '+' + j1s
+        if j2 >= 0:
+            j2s = '+' + j2s
+        if j3 >= 0:
+            j3s = '+' + j3s
+        if j4 >= 0:
+            j4s = '+' + j4s
+        if self.velocity >= 0:
+            vs = '+' + str(self.velocity)
+
+        cadena = f'MOVE-J:{j1s}{j2s}{j3s}{j4s}{vs}'
+        
+        self.sendMessage(cadena)
+        data = self.getMessage()
+        if not self.decodeMessage(data):
+            self.printError(f'There was a problem decoding the message from the Robot')
+            return False
+
+        # Check the robot is in the desire position
+        if (self.position_j1j2j3[0] - j1)**2 + (self.position_j1j2j3[1] - j2)**2 + (self.position_j1j2j3[2] - j3)**2 < 0.01**2: 
+            return True
+        else:
+            self.printError(f'Robot position ({self.position_j1j2j3}) does not match the required position ({[j1, j2, j3]})')
+            return False
+    ##############################################################################
+
+    ##############################################################################
     def setEM(self, status):
         """
         Set ElectroMagnet Status. 
