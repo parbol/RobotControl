@@ -2,7 +2,7 @@ from optparse import OptionParser
 from matplotlib.image import imread
 import matplotlib.pyplot as plt
 from CameraClient.RobotCamera import RobotCamera
-from RobotBrain.RobotController import RobotController
+from RobotBrain.ETLController import ETLController
 from ExperimentalSetup.Camera import Camera
 from ExperimentalSetup.Robot import Robot
 from ExperimentalSetup.Table import Table
@@ -60,22 +60,23 @@ if __name__ == "__main__":
     robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)
     
     #Initialize Robot
-    robotcontroller = RobotController(options.device, options.bauds, robotCamera, robot3D, True)
-    tool_pos = [-332.36, 173.79, 94,-161.17]
-    # Get current pos
-    pos = robotcontroller.getPositionXYZ()
-    # Go to safe z
-    robotcontroller.goTo(pos[0], pos[1], 180, pos[3])
-    # Move to correct x,y with safe z
-    robotcontroller.goTo(tool_pos[0], tool_pos[1], 180, tool_pos[3])
-    # Go down
-    robotcontroller.goTo(tool_pos[0], tool_pos[1], tool_pos[2], tool_pos[3])
-    # Turn on EM
-    robotcontroller.setEM(1)
-    # Go up again
-    robotcontroller.goTo(tool_pos[0], tool_pos[1], 180, tool_pos[3])
+    etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, True)
+    etlcontroller.exit()
+    # tool_pos = [-332.36, 173.79, 94,-161.17]
+    # # Get current pos
+    # pos = robotcontroller.getPositionXYZ()
+    # # Go to safe z
+    # robotcontroller.goTo(pos[0], pos[1], 180, pos[3])
+    # # Move to correct x,y with safe z
+    # robotcontroller.goTo(tool_pos[0], tool_pos[1], 180, tool_pos[3])
+    # # Go down
+    # robotcontroller.goTo(tool_pos[0], tool_pos[1], tool_pos[2], tool_pos[3])
+    # # Turn on EM
+    # robotcontroller.setEM(1)
+    # # Go up again
+    # robotcontroller.goTo(tool_pos[0], tool_pos[1], 180, tool_pos[3])
 
-    robotcontroller.stop()
+    # robotcontroller.stop()
 
     #########################################################################
     #En este punto ya podemos tomar fotos y también podemos mover el robot ##
