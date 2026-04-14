@@ -13,7 +13,7 @@ import sys
 import os
 import math
 import re
-from RobotController import RobotController
+from RobotBrain.RobotController import RobotController
 
 class ETLController:
 
@@ -35,16 +35,26 @@ class ETLController:
 
         # Show off
         self.showBanner()
+        time.sleep(1)
 
         # Actual position
+        self.robotcontroller.askStatus()
         self.updateStatus()
 
         # Movement information
         self.safe_z = 180
-        self.picker_tool = []
-        self.safe_pos_rotate_arm = [x, y, self.safe_z]
+        self.picker_tool = [-332.36, 173.79, 94,-161.17]
+        # self.safe_pos_rotate_arm = [x, y, self.safe_z]
         
         # Initialise arm in ETL mode, ETL is left handed, IT is right handed
+        self.checkArmPlacement()
+        while not self._is_left_handed:
+            self.rotateArm(left_handed=True)
+            self.checkArmPlacement()
+        self.checkArmPlacement()
+        while self._is_left_handed:
+            self.rotateArm(left_handed=False)
+            self.checkArmPlacement()
         self.checkArmPlacement()
         while not self._is_left_handed:
             self.rotateArm(left_handed=True)
@@ -56,27 +66,40 @@ class ETLController:
 
     ##############################################################################
     def checkArmPlacement(self):
-        position_j1j2j3 = self.getPositionJ1J2J3()
-        if position_j1j2j3[1]<= 0:
-            self._is_left_handed = False
-            return False
-        else:
+        self.updateStatus()
+        if self.position_j1j2j3j4[1]<= 0:
             self._is_left_handed = True
             return True
+        else:
+            self._is_left_handed = False
+            return False
     ##############################################################################
 
     ##############################################################################
     def rotateArm(self, left_handed = True):
+        # TODO if i need to go to right handed i need another safe pos
+        # Or use the diagona j1 -45 to avoid collisions with the robot
         # Check if current orientation is the final one
         if self.checkArmPlacement() != left_handed:
-            final_j2 = -20 if left_handed else 20
-            # Move to safe pos
-            self.safeMovement(self.safe_pos_rotate_arm[0], self.safe_pos_rotate_arm[1], self.safe_pos_rotate_arm[2])
+            final_j2 = -90 if left_handed else 90
+            safe_j2 = 90 if left_handed else -90
             self.updateStatus()
-            # Rotate j2
-            self.robotcontroller.moveJ(self.position_j1j2j3[0], final_j2, self.position_j1j2j3[2], self.position_j1j2j3[3]) 
+            print(self.position_xyzrz)
+            # Move to safe pos
+            self.safeMovement(self.position_xyzrz[0], self.position_xyzrz[1], self.safe_z, self.position_xyzrz[3])
             self.updateStatus()
 
+            # Rotate safe j2
+            self.robotcontroller.moveJ(self.position_j1j2j3j4[0], safe_j2, self.position_j1j2j3j4[2], self.position_j1j2j3j4[3]) 
+            self.updateStatus()
+            # Rotate j1
+            self.robotcontroller.moveJ(-45, self.position_j1j2j3j4[1], self.position_j1j2j3j4[2], self.position_j1j2j3j4[3]) 
+            self.updateStatus()
+            # Rotate j2
+            self.robotcontroller.moveJ(self.position_j1j2j3j4[0], final_j2, self.position_j1j2j3j4[2], self.position_j1j2j3j4[3]) 
+            self.updateStatus()
+
+            self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], self.position_xyzrz[3])
             if self.checkArmPlacement() == left_handed:
                 return True
             else:
@@ -113,8 +136,12 @@ class ETLController:
     ##############################################################################
 
     # ##############################################################################
-    # def grabPickerTool(self):
-
+    def grabPickerTool(self):
+        self.safeMovement(self.picker_tool[0], self.picker_tool[1], self.picker_tool[2], self.picker_tool[3])
+        self.robotcontroller.setEM(1)
+        self.updateStatus()
+        self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.safe_z, self.position_xyzrz[3])
+        return True
     # ##############################################################################
 
     # ##############################################################################

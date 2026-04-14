@@ -61,6 +61,7 @@ if __name__ == "__main__":
     
     #Initialize Robot
     etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, True)
+    etlcontroller.grabPickerTool()
     etlcontroller.exit()
     # tool_pos = [-332.36, 173.79, 94,-161.17]
     # # Get current pos
