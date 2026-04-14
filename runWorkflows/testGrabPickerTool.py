@@ -56,28 +56,34 @@ if __name__ == "__main__":
     # The 3D model of the robot
     robot3D = Robot(50.0, 30.0, 30.0, 40, table, camera, fig, ax1, ax2, ax3)
 
-    #Initialize Camera
+    # Initialize Camera
     robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)
     
-    #Initialize Robot
+    # Initialize Robot
     etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, True)
+    
+    # Move to take some photos 
+    mark_pos = [x, y, z ,rz] # TODO
+    etlcontroller.safeMovement(mark_pos[0], mark_pos[1], mark_pos[2], mark_pos[3])
+    robotCamera.changeFileName(f"Pictures/picture.png")
+    robotCamera.takePic()
+    
+    # Pick picker tool
     etlcontroller.grabPickerTool()
-    etlcontroller.exit()
-    # tool_pos = [-332.36, 173.79, 94,-161.17]
-    # # Get current pos
-    # pos = robotcontroller.getPositionXYZ()
-    # # Go to safe z
-    # robotcontroller.goTo(pos[0], pos[1], 180, pos[3])
-    # # Move to correct x,y with safe z
-    # robotcontroller.goTo(tool_pos[0], tool_pos[1], 180, tool_pos[3])
-    # # Go down
-    # robotcontroller.goTo(tool_pos[0], tool_pos[1], tool_pos[2], tool_pos[3])
-    # # Turn on EM
-    # robotcontroller.setEM(1)
-    # # Go up again
-    # robotcontroller.goTo(tool_pos[0], tool_pos[1], 180, tool_pos[3])
 
-    # robotcontroller.stop()
+    # Move 2 pieces one on top of the other
+    piece_pos = [-319, -389, 148.76, -161.15]
+    final_pos = [-319, -399, 148.76, -161.15]
+    etlcontroller.grabAssemblyPart(piece_pos[0], piece_pos[1], piece_pos[2], piece_pos[3)
+    etlcontroller.releaseAssemblyPart(final_pos[0], final_pos[1], final_pos[2], final_pos[3)
+    # Next piece
+    etlcontroller.grabAssemblyPart(piece_pos[0], piece_pos[1], piece_pos[2], piece_pos[3)
+    etlcontroller.releaseAssemblyPart(final_pos[0], final_pos[1], final_pos[2], final_pos[3)
+
+    # Release picker tool
+    etlcontroller.releasePickerTool()
+    
+    etlcontroller.exit()
 
     #########################################################################
     #En este punto ya podemos tomar fotos y también podemos mover el robot ##
