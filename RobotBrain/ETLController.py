@@ -44,8 +44,11 @@ class ETLController:
         # Movement information
         self.safe_z = 180
         self.picker_tool = [-332.36, 173.79, 94,-161.17]
-        # self.safe_pos_rotate_arm = [x, y, self.safe_z]
         
+        # Limits to avoid collision
+        # Define one region for picker tool and assembly, another region for Tamale plate
+        self.x_limit = -64
+
         # Initialise arm in ETL mode, ETL is left handed, IT is right handed
         self.checkArmPlacement()
         while not self._is_left_handed:
@@ -124,54 +127,72 @@ class ETLController:
     def safeMovement(self, x, y, z, rz):
         # Go up to safe z
         self.updateStatus()
-        self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.safe_z, self.position_xyzrz[3])
+        self.changeZ(self.safe_z)
         self.updateStatus()
         # Move to desired pos and safe z
+        # Check if changing region
+        if (self.position_xyzrz[0] - self.x_limit)*(x - self.x_limit) <= 0:
+            self.printLog("Crossing x limit = {self.x_limit}, following safety path")
+            self.robotcontroller.goTo(self.safe_position[0], self.safe_position[1], self.safe_position_[2], self.position_xyzrz[3])
         self.robotcontroller.goTo(x, y, self.safe_z, rz)
         self.updateStatus()
+
         # Move to desired pos 
-        self.robotcontroller.goTo(x, y, z, rz)
+        self.changeZ(z)
         self.updateStatus()
         return True
     ##############################################################################
 
-    # ##############################################################################
+    ##############################################################################
+    def changeZ(self, z):
+        self.updateStatus()
+        self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], z, self.position_xyzrz[3])
+        self.updateStatus()
+        return True
+        
+    ##############################################################################
+
+    ##############################################################################
     def grabPickerTool(self):
         self.safeMovement(self.picker_tool[0], self.picker_tool[1], self.picker_tool[2], self.picker_tool[3])
         self.robotcontroller.setEM(1)
         self.updateStatus()
-        self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.safe_z, self.position_xyzrz[3])
+        self.changeZ(self.safe_z)
         return True
-    # ##############################################################################
+    ##############################################################################
 
-    # ##############################################################################
-    # def releasePickerTool(self):
+    ##############################################################################
+    def releasePickerTool(self):
+        self.safeMovement(self.picker_tool[0], self.picker_tool[1], self.picker_tool[2], self.picker_tool[3])
+        self.robotcontroller.setEM(0)
+        self.updateStatus()
+        self.changeZ(self.safe_z)
 
-    # ##############################################################################
+    ##############################################################################
 
-    # ##############################################################################
-    # def grabAssemblyPart(self, x, y, z, rz):
+    ##############################################################################
+    def grabAssemblyPart(self, x, y, z, rz):
+        self.safeMovement(x, y, z, rz)
+        self.robotcontroller.setValves('0'*18+'1'*2) # XXX - are this the right valves?
+        self.updateStatus()
+        self.changeZ(self.safe_z)
+        return True
 
-    # ##############################################################################
+    ##############################################################################
 
-    # ##############################################################################
-    # def releaseAssemblyPart(self, x, y, z, rz):
+    ##############################################################################
+    def releaseAssemblyPart(self, x, y, z, rz):
+        self.safeMovement(x, y, z, rz)
+        self.robotcontroller.setValves('0'*20) # XXX - are this the right valves?
+        self.updateStatus()
+        self.changeZ(self.safe_z)
+        return True
 
-    # ##############################################################################
-
-    # ##############################################################################
-    # def moveToPhoto(self, x, y, z, rz):
-
-    # ##############################################################################
-    # 
-    # ##############################################################################
-    # def moveBetweenPhotos(self, x, y, z, rz):
-
-    # ##############################################################################
+    ##############################################################################
 
     # ##############################################################################
     # def wait_user(self):
-    # # Needed?
+    # Needed?
     # ##############################################################################
 
     # ##############################################################################
@@ -237,13 +258,13 @@ class ETLController:
     def showBanner(self):
 
         print( self.HEADER)
-        print(' ____   ______   ____         __   ___   ____   ______  ____   ___   _      _        ___  ____')
-        print('|    | |      | |    |       /  ] /   \ |    \ |      ||    \ /   \ | |    | |      /  _]|    \ ') 
-        print('|  __| |_    _| |    |      /  / |     ||  _  ||      ||  D  )     || |    | |     /  [_ |  D  )')
-        print('| |__    |  |   |    |     /  /  |  O  ||  |  ||_|  |_||    /|  O  || |___ | |___ |    _]|    /') 
-        print('|  __|   |  |   |    |__  /   \_ |     ||  |  |  |  |  |    \|     ||     ||     ||   [_ |    \ ') 
+        print(' ____   ______   ____         __   ___   ____   ______  ____   ___   _      _        ___  ____   ')
+        print('|    | |      | |    |       /  ] /   \ |    \ |      ||    \ /   \ | |    | |      /  _]|    \  ')
+        print('|  __| |_    _| |    |      /  / |     ||  _  ||      ||  D  )     || |    | |     /  [_ |  D  ) ')
+        print('| |__    |  |   |    |     /  /  |  O  ||  |  ||_|  |_||    /|  O  || |___ | |___ |    _]|    /  ')
+        print('|  __|   |  |   |    |__  /   \_ |     ||  |  |  |  |  |    \|     ||     ||     ||   [_ |    \  ')
         print('| |__    |  |   |       | \     ||     ||  |  |  |  |  |  .  \     ||     ||     ||     ||  .  \ ')
-        print('|____|   |__|   |_______|  \____| \___/ |__|__|  |__|  |__|\_|\___/ |_____||_____||_____||__|\_|')
+        print('|____|   |__|   |_______|  \____| \___/ |__|__|  |__|  |__|\_|\___/ |_____||_____||_____||__|\_| ')
         print( self.ENDC)
         print( '\n\n')
     ##############################################################################

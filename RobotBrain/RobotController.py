@@ -33,7 +33,7 @@ class RobotController:
         self.device = device
         self.bauds = bauds
 
-        #Camera model
+        #Camera model XXX - Why do I need this?
         self.camera = camera
         
         #Robot3D model
