@@ -293,7 +293,7 @@ class RobotController:
         Set ElectroMagnet Status. 
         Parameters:
         ---------------------------
-            status: int
+            status: str
                 20 bits together, 1 per valve in the system. 0 or 1. 0 meaning Off and 1 meaning On
         """
         status_str = str(status)
@@ -306,7 +306,7 @@ class RobotController:
         data = self.getMessage()
         self.decodeMessage(data)
         # Check the EM is in the desire status
-        if self.valves == status_str:
+        if str(self.valves) == str(status_str):
             return True
         else:
             self.printError(f'Valves status ({self.valves}) does not match the required status ({status})')

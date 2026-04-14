@@ -62,16 +62,50 @@ if __name__ == "__main__":
     #Initialize Robot
     robotcontroller = RobotController(options.device, options.bauds, robotCamera, robot3D, True)
     tool_pos = [-332.36, 173.79, 94,-161.17]
+    hex_pos = [-292.45, -311.38, 148.76, -161.15]
+    squ_pos = [-261.86, -309.17, 148.76, -161.15]
+    final_pos = [-319, -389, 148.76, -161.15]
     # Get current pos
     pos = robotcontroller.getPositionXYZ()
     # Go to safe z
     robotcontroller.goTo(pos[0], pos[1], 180, pos[3])
-    # Move to correct x,y with safe z
+    # Move to tool pos x,y with safe z
     robotcontroller.goTo(tool_pos[0], tool_pos[1], 180, tool_pos[3])
     # Go down
     robotcontroller.goTo(tool_pos[0], tool_pos[1], tool_pos[2], tool_pos[3])
     # Turn on EM
     robotcontroller.setEM(1)
+    # Go up again
+    robotcontroller.goTo(tool_pos[0], tool_pos[1], 180, tool_pos[3])
+    # Move to square  pos
+    robotcontroller.goTo(squ_pos[0], squ_pos[1], 180, squ_pos[3])
+    robotcontroller.goTo(squ_pos[0], squ_pos[1], squ_pos[2], squ_pos[3])
+    robotcontroller.setValves('0'*18+'11')
+    robotcontroller.goTo(squ_pos[0], squ_pos[1], 180, squ_pos[3])
+    # Move to final pos
+    robotcontroller.goTo(final_pos[0], final_pos[1], 180, final_pos[3])
+    robotcontroller.goTo(final_pos[0], final_pos[1], final_pos[2], final_pos[3])
+    robotcontroller.setValves('0'*18+'00')
+    robotcontroller.goTo(final_pos[0], final_pos[1], 180, final_pos[3])
+
+
+    # Move to hex  pos
+    robotcontroller.goTo(hex_pos[0], hex_pos[1], 180, hex_pos[3])
+    robotcontroller.goTo(hex_pos[0], hex_pos[1], hex_pos[2], hex_pos[3])
+    robotcontroller.setValves('0'*18+'11')
+    robotcontroller.goTo(hex_pos[0], hex_pos[1], 180, hex_pos[3])
+    # Move to final pos
+    robotcontroller.goTo(final_pos[0], final_pos[1], 180, final_pos[3])
+    robotcontroller.goTo(final_pos[0], final_pos[1], final_pos[2], final_pos[3])
+    robotcontroller.setValves('0'*18+'00')
+    robotcontroller.goTo(final_pos[0], final_pos[1], 180, final_pos[3])
+    # Release Tool
+    # Move to tool pos x,y with safe z
+    robotcontroller.goTo(tool_pos[0], tool_pos[1], 180, tool_pos[3])
+    # Go down
+    robotcontroller.goTo(tool_pos[0], tool_pos[1], tool_pos[2], tool_pos[3])
+    # Turn on EM
+    robotcontroller.setEM(0)
     # Go up again
     robotcontroller.goTo(tool_pos[0], tool_pos[1], 180, tool_pos[3])
 
