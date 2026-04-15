@@ -51,10 +51,6 @@ class ETLController:
 
         # Initialise arm in ETL mode, ETL is left handed, IT is right handed
         self.checkArmPlacement()
-        while not self._is_left_handed:
-            self.rotateArm(left_handed=True)
-            self.checkArmPlacement()
-        self.checkArmPlacement()
         while self._is_left_handed:
             self.rotateArm(left_handed=False)
             self.checkArmPlacement()
@@ -80,16 +76,16 @@ class ETLController:
 
     ##############################################################################
     def rotateArm(self, left_handed = True):
-        # TODO if i need to go to right handed i need another safe pos
-        # Or use the diagona j1 -45 to avoid collisions with the robot
+        # Use the diagona j1 -45 to avoid collisions with the robot
+        # Use a safe j2 or +-90 to avoid colisions while going to j1 = -45
         # Check if current orientation is the final one
         if self.checkArmPlacement() != left_handed:
             final_j2 = -90 if left_handed else 90
             safe_j2 = 90 if left_handed else -90
             self.updateStatus()
             print(self.position_xyzrz)
-            # Move to safe pos
-            self.safeMovement(self.position_xyzrz[0], self.position_xyzrz[1], self.safe_z, self.position_xyzrz[3])
+            # Move to safe z 
+            self.changeZ(self.safe_z)
             self.updateStatus()
 
             # Rotate safe j2
@@ -130,8 +126,9 @@ class ETLController:
         self.changeZ(self.safe_z)
         self.updateStatus()
         # Move to desired pos and safe z
+        # XXX - Check colision with the robot as a minimum radio or something similar?
         # Check if changing region
-        if (self.position_xyzrz[0] - self.x_limit)*(x - self.x_limit) <= 0:
+        if (self.position_xyzrz[0] - self.x_limit) * (x - self.x_limit) <= 0:
             self.printLog("Crossing x limit = {self.x_limit}, following safety path")
             self.robotcontroller.goTo(self.safe_position[0], self.safe_position[1], self.safe_position_[2], self.position_xyzrz[3])
         self.robotcontroller.goTo(x, y, self.safe_z, rz)
@@ -146,6 +143,7 @@ class ETLController:
     ##############################################################################
     def changeZ(self, z):
         self.updateStatus()
+        # XXX - Define a range of safe z?
         self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], z, self.position_xyzrz[3])
         self.updateStatus()
         return True
