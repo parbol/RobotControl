@@ -18,6 +18,8 @@ This package takes care of communicating with the camera server in the raspberry
 
 This package communicates with the CS9 and sends commands to move, open/close vacuum lines, etc.
 
+Also, the ETLController is implemented where specific ETL functions and movements are defined
+
 ## ExperimentalSetup
 
 This package contains a model of the table, robot and physical camera. It basically takes care of translating between camera coordinates and 3D coordinates.
@@ -27,9 +29,10 @@ This package contains a model of the table, robot and physical camera. It basica
 This should have the executables implementing the calibration and assembly workflows.
 
 ## How to work with it?
-1) Start class
+1) Run the wanted script or connect to the Robot Controller
 '''
 rc = RobotController.RobotController("/dev/ttyUSB1", 115200, "")
 '''
-2) Start connection in Robot tablet
-3) Send wanted message
+2) Using the tablet, go to ETL and start connection.
+- Now, the handshake should be done
+3) Send the wanted messages
