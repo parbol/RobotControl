@@ -62,23 +62,25 @@ if __name__ == "__main__":
     # Initialize Robot
     etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, True)
     
-    # Move to take some photos 
-    mark_pos = [x, y, z ,rz] # TODO
-    etlcontroller.safeMovement(mark_pos[0], mark_pos[1], mark_pos[2], mark_pos[3])
-    robotCamera.changeFileName(f"Pictures/picture.png")
-    robotCamera.takePic()
+    # # Move to take some photos 
+    # mark_pos = [x, y, z ,rz] # TODO
+    # etlcontroller.safeMovement(mark_pos[0], mark_pos[1], mark_pos[2], mark_pos[3])
+    # robotCamera.changeFileName(f"Pictures/picture.png")
+    # robotCamera.takePic()
     
     # Pick picker tool
     etlcontroller.grabPickerTool()
 
     # Move 2 pieces one on top of the other
-    piece_pos = [-319, -389, 148.76, -161.15]
-    final_pos = [-319, -399, 148.76, -161.15]
-    etlcontroller.grabAssemblyPart(piece_pos[0], piece_pos[1], piece_pos[2], piece_pos[3)
-    etlcontroller.releaseAssemblyPart(final_pos[0], final_pos[1], final_pos[2], final_pos[3)
+    sensor_pos = [-361.43, -421.93, 148.76, -161.17]
+    finalsensor_pos = [272.43, -467.14, 148.76, -108.83] # Rotate piece 90deg to the left
+    etlcontroller.grabAssemblyPart(sensor_pos[0], sensor_pos[1], sensor_pos[2], sensor_pos[3])
+    etlcontroller.releaseAssemblyPart(finalsensor_pos[0], finalsensor_pos[1], finalsensor_pos[2], finalsensor_pos[3])
     # Next piece
-    etlcontroller.grabAssemblyPart(piece_pos[0], piece_pos[1], piece_pos[2], piece_pos[3)
-    etlcontroller.releaseAssemblyPart(final_pos[0], final_pos[1], final_pos[2], final_pos[3)
+    metal_pos = [-302.28, -191.23, 139.12, -161.17]
+    finalmetal_pos = [283.66, -482.61, 148.76, -108.83] # Rotate piece 90deg to the left
+    etlcontroller.grabAssemblyPart(metal_pos[0], metal_pos[1], metal_pos[2], metal_pos[3])
+    etlcontroller.releaseAssemblyPart(finalmetal_pos[0], finalmetal_pos[1], finalmetal_pos[2], finalmetal_pos[3])
 
     # Release picker tool
     etlcontroller.releasePickerTool()

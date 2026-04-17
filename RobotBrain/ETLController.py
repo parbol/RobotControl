@@ -19,7 +19,6 @@ class ETLController:
 
     ##############################################################################
     def __init__(self, device, bauds, camera, robot3D, debug = False):
-    #TODO: Implementar si es modo ETL comprobar j2 si es <0 left-handed --> ETL ok. Si no mover a punto seguro (TODO: buscar el pto), luego mover angular j2 (TODO funcion angular llamada MOVE-J:j1+-...j2+-...j3+-...j4+-...) rechekear y is_ETL = true
 
         self.HEADER = '\033[95m'
         self.OKBLUE = '\033[94m'
@@ -44,16 +43,13 @@ class ETLController:
         # Movement information
         self.safe_z = 180
         self.picker_tool = [-332.36, 173.79, 94,-161.17]
+        self.safe_position = [-361.43, -421.93, 148.76]
         
         # Limits to avoid collision
         # Define one region for picker tool and assembly, another region for Tamale plate
-        self.x_limit = -64
+        self.x_limit = -230
 
         # Initialise arm in ETL mode, ETL is left handed, IT is right handed
-        self.checkArmPlacement()
-        while self._is_left_handed:
-            self.rotateArm(left_handed=False)
-            self.checkArmPlacement()
         self.checkArmPlacement()
         while not self._is_left_handed:
             self.rotateArm(left_handed=True)
@@ -130,7 +126,7 @@ class ETLController:
         # Check if changing region
         if (self.position_xyzrz[0] - self.x_limit) * (x - self.x_limit) <= 0:
             self.printLog("Crossing x limit = {self.x_limit}, following safety path")
-            self.robotcontroller.goTo(self.safe_position[0], self.safe_position[1], self.safe_position_[2], self.position_xyzrz[3])
+            self.robotcontroller.goTo(self.safe_position[0], self.safe_position[1], self.safe_position[2], self.position_xyzrz[3])
         self.robotcontroller.goTo(x, y, self.safe_z, rz)
         self.updateStatus()
 
@@ -171,7 +167,7 @@ class ETLController:
     ##############################################################################
     def grabAssemblyPart(self, x, y, z, rz):
         self.safeMovement(x, y, z, rz)
-        self.robotcontroller.setValves('0'*18+'1'*2) # XXX - are this the right valves?
+        self.robotcontroller.setValves('0'*18+'1'*2)
         self.updateStatus()
         self.changeZ(self.safe_z)
         return True
