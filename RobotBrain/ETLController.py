@@ -127,7 +127,11 @@ class ETLController:
         if (self.position_xyzrz[0] - self.x_limit) * (x - self.x_limit) <= 0:
             self.printLog("Crossing x limit = {self.x_limit}, following safety path")
             self.robotcontroller.goTo(self.safe_position[0], self.safe_position[1], self.safe_position[2], self.position_xyzrz[3])
-        self.robotcontroller.goTo(x, y, self.safe_z, rz)
+        self.robotcontroller.goTo(x, y, self.safe_z, self.posit_xyzrz[3])
+        self.updateStatus()
+
+        # Rotate head
+        self.rotateRZ(rz)
         self.updateStatus()
 
         # Move to desired pos 
@@ -141,6 +145,34 @@ class ETLController:
         self.updateStatus()
         # XXX - Define a range of safe z?
         self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], z, self.position_xyzrz[3])
+        self.updateStatus()
+        return True
+        
+    ##############################################################################
+
+    ##############################################################################
+    def rotateRZ(self, rz):
+        # XXX - TO BE TESTED
+        """
+        rZ in the robot is defined as:
+                    +-180
+                +90         -90
+                        0
+        """
+        self.updateStatus()
+        if self.position_xyrz[3] < 0:
+            # Move to +180 or 0, the closest one then move to the final position
+            safe_rz = 0 if abs(self.position_xyrz[3] - 0) <= abs(self.position_xyrz[3]+180) else 180
+            self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.positionxyyzrz[2], safe_rz)
+            self.updateStatus()
+        if rz < 0:
+            # Move to 0 or +180, the closest one, then to the final one
+            safe_rz = 0 if abs(rz - 0) <= abs(rz+180) else 180
+            self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.positionxyyzrz[2], safe_rz)
+            self.updateStatus()
+
+        # Final movement
+        self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.positionxyyzrz[2], rz)
         self.updateStatus()
         return True
         
