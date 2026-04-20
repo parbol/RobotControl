@@ -39,11 +39,11 @@ source setup.sh
 
 2) Connect to the raspberry (Camera controller) and run the server there:
 ```python
-TODO CameraServer....
+python3 testCameraServer.py -i 192.168.0.189 -p 8080
 ```
-3) Run the Camera Client locally:
+3) Initialize the camera locally:
 ```python
-TODO CameraClient...
+robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)
 ```
 Now the connection between the camera and the computer is working.
 
