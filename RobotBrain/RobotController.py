@@ -34,7 +34,7 @@ class RobotController:
         self.bauds = bauds
 
         #Camera model XXX - Why do I need this?
-        self.camera = camera
+        # self.camera = camera
         
         #Robot3D model
         self.robot3D = robot3D
@@ -257,6 +257,7 @@ class RobotController:
             return True
         else:
             self.printError(f'Robot position ({self.position_xyz}) does not match the required position ({[x, y, z]})')
+            self.exit()
             return False
     ##############################################################################
 

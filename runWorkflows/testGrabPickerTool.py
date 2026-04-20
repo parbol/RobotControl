@@ -57,10 +57,11 @@ if __name__ == "__main__":
     robot3D = Robot(50.0, 30.0, 30.0, 40, table, camera, fig, ax1, ax2, ax3)
 
     # Initialize Camera
-    robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)
+    # robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)
     
     # Initialize Robot
-    etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, False)
+    # etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, False)
+    etlcontroller = ETLController(options.device, options.bauds, None, robot3D, False)
     
     # # Move to take some photos 
     # mark_pos = [x, y, z ,rz] # TODO
@@ -72,13 +73,13 @@ if __name__ == "__main__":
     etlcontroller.grabPickerTool()
 
     # Move 2 pieces one on top of the other
-    sensor_pos = [-361.43, -421.93, 148.76, -161.17]
-    finalsensor_pos = [272.43, -467.14, 148.76, -108.83] # Rotate piece 90deg to the left
+    sensor_pos = [-361.43, -421.93, 136, 107]
+    finalsensor_pos = [286, -482, 150, 107] # Rotate piece 90deg to the left
     etlcontroller.grabAssemblyPart(sensor_pos[0], sensor_pos[1], sensor_pos[2], sensor_pos[3])
     etlcontroller.releaseAssemblyPart(finalsensor_pos[0], finalsensor_pos[1], finalsensor_pos[2], finalsensor_pos[3])
     # Next piece
-    metal_pos = [-302.28, -191.23, 139.12, -161.17]
-    finalmetal_pos = [283.66, -482.61, 148.76, -108.83] # Rotate piece 90deg to the left
+    metal_pos = [-302.28, -191.23, 140, 107]
+    finalmetal_pos = [286, -482, 150, 107] # Rotate piece 90deg to the left
     etlcontroller.grabAssemblyPart(metal_pos[0], metal_pos[1], metal_pos[2], metal_pos[3])
     etlcontroller.releaseAssemblyPart(finalmetal_pos[0], finalmetal_pos[1], finalmetal_pos[2], finalmetal_pos[3])
 
