@@ -8,13 +8,7 @@ from ExperimentalSetup.Robot import Robot
 from ExperimentalSetup.Table import Table
 import numpy as np
 
-# Units
-mm = 1
-
 # Constants
-# TODO - Check this value and units
-Z_MOVE = 182 * mm  
-
 
 if __name__ == "__main__":
     
@@ -64,8 +58,6 @@ if __name__ == "__main__":
     etlcontroller = ETLController(options.device, options.bauds, None, robot3D, False)
     
     # # Move to take some photos 
-    # mark_pos = [x, y, z ,rz] # TODO
-    # etlcontroller.safeMovement(mark_pos[0], mark_pos[1], mark_pos[2], mark_pos[3])
     # robotCamera.changeFileName(f"Pictures/picture.png")
     # robotCamera.takePic()
     

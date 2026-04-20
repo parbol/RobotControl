@@ -28,11 +28,22 @@ This package contains a model of the table, robot and physical camera. It basica
 
 This should have the executables implementing the calibration and assembly workflows.
 
+The RobotControl scripts handles the basic comunication with the robot. While the ETLController handle ETL specific and more complex functions.
+
 ## How to work with it?
-1) Run the wanted script or connect to the Robot Controller
-'''
-rc = RobotController.RobotController("/dev/ttyUSB1", 115200, "")
-'''
+1) 
+* Connect to the Robot Controller
+```python
+robotcontroller = RobotController(device, bauds, camera, robot3D, debug)
+```
+* Connect to ETL Controller
+```python
+etlcontroller = ETLController(options.device, options.bauds, None, robot3D, False)
+```
+It will automatically test that the robot arm is in the correct orientation (left handed) and place it as it should be. 
+
+Also, it has defined a safe movement (`safeMovement`), checking in which part of the table the robot is (referenced to the ETL plate position) and moves safely between them. For that both angular and cartesians movements are used.
+
 2) Using the tablet, go to ETL and start connection.
 - Now, the handshake should be done
-3) Send the wanted messages
+3) Send the wanted messages/Run the wanted program

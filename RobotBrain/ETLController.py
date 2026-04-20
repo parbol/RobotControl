@@ -46,16 +46,18 @@ class ETLController:
         self.picker_tool = [-332.36, 173.79, 94,-161.17]
         self.safe_position = [-361.43, -421.93, self.safe_z, self.safe_rz]
         # Plate central position in angular coordinates
-        self.plate_position_j1j2j3j4 = {1: [-30, -70, self.safe_z, 170], 
-                                         2: [-98, -78, self.safe_z, 170],
-                                         3: [-116, -115, self.safe_z, 30],
+        # TODO - update j4
+        self.plate_position_j1j2j3j4 = { 1: [-30, -70, self.safe_z, 107], 
+                                         2: [-98, -78, self.safe_z, 107],
+                                         3: [-116, -115, self.safe_z, 107],
                                          4: [-170, -110, self.safe_z, 80],
                                         }
         # Plate central position in cartesian coordinates, similar to previous but different rounding
-        self.plate_position_xyzrz = {1: [292, -417, self.safe_z, -70], 
-                                     2: [-292, -390, self.safe_z, 6],
-                                     3: [-319, -155, self.safe_z, -160],
-                                     4: [-332, -174, self.safe_z, -161]
+        # TODO check when does Y change sign
+        self.plate_position_xyzrz = {1: [292, -417, self.safe_z, 107], 
+                                     2: [-292, -390, self.safe_z, 107],
+                                     3: [-319, 155, self.safe_z, 107],
+                                     4: [-332, 174, self.safe_z, -161]
                                      }
         
         # Limits to avoid collision
