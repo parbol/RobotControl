@@ -42,8 +42,9 @@ class ETLController:
 
         # Movement information
         self.safe_z = 180
+        self.safe_rz = 60
         self.picker_tool = [-332.36, 173.79, 94,-161.17]
-        self.safe_position = [-361.43, -421.93, 148.76]
+        self.safe_position = [-361.43, -421.93, self.safe_z, self.safe_rz]
         
         # Limits to avoid collision
         # Define one region for picker tool and assembly, another region for Tamale plate
@@ -79,7 +80,6 @@ class ETLController:
             final_j2 = -90 if left_handed else 90
             safe_j2 = 90 if left_handed else -90
             self.updateStatus()
-            print(self.position_xyzrz)
             # Move to safe z 
             self.changeZ(self.safe_z)
             self.updateStatus()
@@ -120,23 +120,35 @@ class ETLController:
         # Go up to safe z
         self.updateStatus()
         self.changeZ(self.safe_z)
+        input("Moved Z")
         self.updateStatus()
         # Move to desired pos and safe z
         # XXX - Check colision with the robot as a minimum radio or something similar?
         # Check if changing region
         if (self.position_xyzrz[0] - self.x_limit) * (x - self.x_limit) <= 0:
             self.printLog("Crossing x limit = {self.x_limit}, following safety path")
-            self.robotcontroller.goTo(self.safe_position[0], self.safe_position[1], self.safe_position[2], self.position_xyzrz[3])
-        self.robotcontroller.goTo(x, y, self.safe_z, self.posit_xyzrz[3])
+            self.rotateRZ(self.safe_rz)
+            input("Rz rotated to safe rz")
+            self.updateStatus()
+            self.robotcontroller.goTo(self.safe_position[0], self.safe_position[1], self.safe_position[2], self.safe_position[3])
+            input("In safety pos")
+            self.updateStatus()
+            self.rotateRZ(self.safe_rz)
+            input("Rotate rZ 2")
+        self.updateStatus()
+        self.robotcontroller.goTo(x, y, self.safe_z, self.position_xyzrz[3])
+        input("Actual movement")
         self.updateStatus()
 
         # Rotate head
         self.rotateRZ(rz)
         self.updateStatus()
+        input("Final rZ")
 
         # Move to desired pos 
         self.changeZ(z)
         self.updateStatus()
+        input("Final Z")
         return True
     ##############################################################################
 
@@ -160,19 +172,19 @@ class ETLController:
                         0
         """
         self.updateStatus()
-        if self.position_xyrz[3] < 0:
+        if self.position_xyzrz[3] < 0:
             # Move to +180 or 0, the closest one then move to the final position
-            safe_rz = 0 if abs(self.position_xyrz[3] - 0) <= abs(self.position_xyrz[3]+180) else 180
-            self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.positionxyyzrz[2], safe_rz)
+            safe_rz = 0 if abs(self.position_xyzrz[3] - 0) <= abs(self.position_xyzrz[3]+180) else 180
+            self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], safe_rz)
             self.updateStatus()
         if rz < 0:
             # Move to 0 or +180, the closest one, then to the final one
             safe_rz = 0 if abs(rz - 0) <= abs(rz+180) else 180
-            self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.positionxyyzrz[2], safe_rz)
+            self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], safe_rz)
             self.updateStatus()
 
         # Final movement
-        self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.positionxyyzrz[2], rz)
+        self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], rz)
         self.updateStatus()
         return True
         

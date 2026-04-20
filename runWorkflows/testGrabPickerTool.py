@@ -60,7 +60,7 @@ if __name__ == "__main__":
     robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)
     
     # Initialize Robot
-    etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, True)
+    etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, False)
     
     # # Move to take some photos 
     # mark_pos = [x, y, z ,rz] # TODO
