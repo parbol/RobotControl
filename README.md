@@ -31,12 +31,28 @@ This should have the executables implementing the calibration and assembly workf
 The RobotControl scripts handles the basic comunication with the robot. While the ETLController handle ETL specific and more complex functions.
 
 ## How to work with it?
-1) 
-* Connect to the Robot Controller
+1) Setup everything needed:
+```bash
+python3 -m pip install -r requirements.txt
+source setup.sh
+```
+
+2) Connect to the raspberry (Camera controller) and run the server there:
+```python
+TODO CameraServer....
+```
+3) Run the Camera Client locally:
+```python
+TODO CameraClient...
+```
+Now the connection between the camera and the computer is working.
+
+4) Connect to the Robot
+* Via the Robot Controller
 ```python
 robotcontroller = RobotController(device, bauds, camera, robot3D, debug)
 ```
-* Connect to ETL Controller
+* Or via the ETL Controller for predefined complex functions
 ```python
 etlcontroller = ETLController(options.device, options.bauds, None, robot3D, False)
 ```
