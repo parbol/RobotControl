@@ -2,19 +2,13 @@ from optparse import OptionParser
 from matplotlib.image import imread
 import matplotlib.pyplot as plt
 from CameraClient.RobotCamera import RobotCamera
-from RobotBrain.RobotController import RobotController
+from RobotBrain.ETLController import ETLController
 from ExperimentalSetup.Camera import Camera
 from ExperimentalSetup.Robot import Robot
 from ExperimentalSetup.Table import Table
 import numpy as np
 
-# Units
-mm = 1
-
 # Constants
-# TODO - Check this value and units
-Z_MOVE = 182 * mm  
-
 
 if __name__ == "__main__":
     
@@ -56,60 +50,35 @@ if __name__ == "__main__":
     # The 3D model of the robot
     robot3D = Robot(50.0, 30.0, 30.0, 40, table, camera, fig, ax1, ax2, ax3)
 
-    #Initialize Camera
-    robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)
+    # Initialize Camera
+    # robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)
     
-    #Initialize Robot
-    robotcontroller = RobotController(options.device, options.bauds, robotCamera, robot3D, True)
-    tool_pos = [-332.36, 173.79, 94,-161.17]
-    hex_pos = [-292.45, -311.38, 148.76, -161.15]
-    squ_pos = [-261.86, -309.17, 148.76, -161.15]
-    final_pos = [-319, -389, 148.76, -161.15]
-    # Get current pos
-    pos = robotcontroller.getPositionXYZ()
-    # Go to safe z
-    robotcontroller.goTo(pos[0], pos[1], 180, pos[3])
-    # Move to tool pos x,y with safe z
-    robotcontroller.goTo(tool_pos[0], tool_pos[1], 180, tool_pos[3])
-    # Go down
-    robotcontroller.goTo(tool_pos[0], tool_pos[1], tool_pos[2], tool_pos[3])
-    # Turn on EM
-    robotcontroller.setEM(1)
-    # Go up again
-    robotcontroller.goTo(tool_pos[0], tool_pos[1], 180, tool_pos[3])
-    # Move to square  pos
-    robotcontroller.goTo(squ_pos[0], squ_pos[1], 180, squ_pos[3])
-    robotcontroller.goTo(squ_pos[0], squ_pos[1], squ_pos[2], squ_pos[3])
-    robotcontroller.setValves('0'*18+'11')
-    robotcontroller.goTo(squ_pos[0], squ_pos[1], 180, squ_pos[3])
-    # Move to final pos
-    robotcontroller.goTo(final_pos[0], final_pos[1], 180, final_pos[3])
-    robotcontroller.goTo(final_pos[0], final_pos[1], final_pos[2], final_pos[3])
-    robotcontroller.setValves('0'*18+'00')
-    robotcontroller.goTo(final_pos[0], final_pos[1], 180, final_pos[3])
+    # Initialize Robot
+    # etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, False)
+    etlcontroller = ETLController(options.device, options.bauds, None, robot3D, False)
+    
+    # # Move to take some photos 
+    # robotCamera.changeFileName(f"Pictures/picture.png")
+    # robotCamera.takePic()
+    
+    # Pick picker tool
+    etlcontroller.grabPickerTool()
 
+    # Move 2 pieces one on top of the other
+    sensor_pos = [-361.43, -421.93, 136, 107]
+    finalsensor_pos = [286, -482, 150, 107] # Rotate piece 90deg to the left
+    etlcontroller.grabAssemblyPart(sensor_pos[0], sensor_pos[1], sensor_pos[2], sensor_pos[3])
+    etlcontroller.releaseAssemblyPart(finalsensor_pos[0], finalsensor_pos[1], finalsensor_pos[2], finalsensor_pos[3])
+    # Next piece
+    metal_pos = [-302.28, -191.23, 140, 107]
+    finalmetal_pos = [286, -482, 150, 107] # Rotate piece 90deg to the left
+    etlcontroller.grabAssemblyPart(metal_pos[0], metal_pos[1], metal_pos[2], metal_pos[3])
+    etlcontroller.releaseAssemblyPart(finalmetal_pos[0], finalmetal_pos[1], finalmetal_pos[2], finalmetal_pos[3])
 
-    # Move to hex  pos
-    robotcontroller.goTo(hex_pos[0], hex_pos[1], 180, hex_pos[3])
-    robotcontroller.goTo(hex_pos[0], hex_pos[1], hex_pos[2], hex_pos[3])
-    robotcontroller.setValves('0'*18+'11')
-    robotcontroller.goTo(hex_pos[0], hex_pos[1], 180, hex_pos[3])
-    # Move to final pos
-    robotcontroller.goTo(final_pos[0], final_pos[1], 180, final_pos[3])
-    robotcontroller.goTo(final_pos[0], final_pos[1], final_pos[2], final_pos[3])
-    robotcontroller.setValves('0'*18+'00')
-    robotcontroller.goTo(final_pos[0], final_pos[1], 180, final_pos[3])
-    # Release Tool
-    # Move to tool pos x,y with safe z
-    robotcontroller.goTo(tool_pos[0], tool_pos[1], 180, tool_pos[3])
-    # Go down
-    robotcontroller.goTo(tool_pos[0], tool_pos[1], tool_pos[2], tool_pos[3])
-    # Turn on EM
-    robotcontroller.setEM(0)
-    # Go up again
-    robotcontroller.goTo(tool_pos[0], tool_pos[1], 180, tool_pos[3])
-
-    robotcontroller.stop()
+    # Release picker tool
+    etlcontroller.releasePickerTool()
+    
+    etlcontroller.exit()
 
     #########################################################################
     #En este punto ya podemos tomar fotos y también podemos mover el robot ##
