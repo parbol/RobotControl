@@ -39,7 +39,7 @@ class Camera:
         self.open_device()
 
         self.image = None
-        self.set_binning(bx=2,by=2)
+
         
 
     def search_device(self):

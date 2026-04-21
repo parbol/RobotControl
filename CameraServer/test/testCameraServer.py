@@ -14,6 +14,7 @@ if __name__ == "__main__":
 
     camera = Camera('picture.png')
     camera.start_acquisition().set_exposure(1/250)
+    camera.set_binning(2, 2)
     
     server = CameraServer(options.ip, options.port, camera)
     
