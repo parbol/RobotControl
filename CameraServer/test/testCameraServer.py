@@ -13,8 +13,9 @@ if __name__ == "__main__":
     (options, args) = parser.parse_args()
 
     camera = Camera('picture.png')
-    camera.start_acquisition().set_exposure(1/250)
     camera.set_binning(2, 2)
+
+    camera.start_acquisition().set_exposure(1/250)
     
     server = CameraServer(options.ip, options.port, camera)
     
