@@ -29,7 +29,6 @@ class Camera:
         self.filename = filename
 
         self.device_descriptors = None
-        self.device_descriptor = None
         self.device = None
         self.remote_device_nodemap = None
         self.datastream = None
@@ -40,6 +39,7 @@ class Camera:
         self.open_device()
 
         self.image = None
+        self.set_binning(bx=2,by=2)
         
 
     def search_device(self):
@@ -118,6 +118,31 @@ class Camera:
         except Exception as e:
             print('No device is free and available. ERR:' + str(e))
             ids_peak.Library.Close()
+
+
+    ### Let's try to change binning directly from software
+    def set_binning(self, bx=2, by=2):
+        nm = self.remote_device_nodemap
+
+        try:
+            nm.FindNode("BinningHorizontal").SetValue(bx)
+            nm.FindNode("BinningVertical").SetValue(by)
+            print(f"Binning applied: {bx}x{by}")
+            return True
+        except Exception as e:
+            print(f"Integer binning nodes are not available. ERR:" + str(e))
+
+        try:
+            nm.FindNode("BinningHorizontal").SetCurrentEntry(f"x{bx}")
+            nm.FindNode("BinningVertical").SetCurrentEntry(f"x{by}")
+            print(f"Binning applied: x{bx}x{by}")
+            return True
+        except Exception as e:
+            print(f"Enum binning nodes are not available. ERR:" + str(e))
+
+        print("This camera or current mode does not expose configurable binning.")
+        return False
+
 
     def get_image(self):
         """
