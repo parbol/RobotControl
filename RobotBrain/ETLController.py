@@ -59,7 +59,9 @@ class ETLController:
                                      3: [-319, 155, self.safe_z, 107],
                                      4: [-332, 174, self.safe_z, -161]
                                      }
-        
+       
+        self.calibrationPoints = self.produceCalibrationPoints()
+
         # Limits to avoid collision
         # Define one region for picker tool and assembly, another region for Tamale plate
         self.x_limit = -230
@@ -312,6 +314,30 @@ class ETLController:
         self.changeZ(self.safe_z)
         return True
 
+    ##############################################################################
+    
+    ##############################################################################
+    def produceCalibrationPoints(self):
+
+        firstPointX = -132.0
+        firstPointY = -222.0
+
+        #This has to be adjusted by hand
+        offsetCameraX = 20 
+        offsetCameraY = 20
+
+        stepx = 12
+        stepy = 12
+
+        nX = 22
+        nY = 30
+
+        points = [] 
+        for ix in range(nX):
+            for iy in range(nY):
+                points.append([firstPointX + stepx*ix, firstPointY - stepy *iy])
+
+        return points
     ##############################################################################
 
     # ##############################################################################
