@@ -122,27 +122,45 @@ class Camera:
 
     ### Let's try to change binning directly from software
     def set_binning(self, bx=2, by=2):
-        nm = self.remote_device_nodemap
+            nm = self.remote_device_nodemap
 
-        try:
-            nm.FindNode("BinningHorizontal").SetValue(bx)
-            nm.FindNode("BinningVertical").SetValue(by)
-            print(f"Binning applied: {bx}x{by}")
-            return True
-        except Exception as e:
-            print(f"Integer binning nodes are not available. ERR:" + str(e))
+            # 1) Asegurar que no hay adquisición activa
+            # No llames esto después de StartAcquisition
 
-        try:
-            nm.FindNode("BinningHorizontal").SetCurrentEntry(f"x{bx}")
-            nm.FindNode("BinningVertical").SetCurrentEntry(f"x{by}")
-            print(f"Binning applied: x{bx}x{by}")
-            return True
-        except Exception as e:
-            print(f"Enum binning nodes are not available. ERR:" + str(e))
+            # 2) Intentar seleccionar el motor de binning si existe
+            try:
+                sel = nm.FindNode("BinningSelector")
+                # Prueba primero Region0; si falla, luego "Sensor"
+                try:
+                    sel.SetCurrentEntry("Region0")
+                    print("BinningSelector = Region0")
+                except Exception:
+                    sel.SetCurrentEntry("Sensor")
+                    print("BinningSelector = Sensor")
+            except Exception as e:
+                print("No BinningSelector or cannot set it:", e)
 
-        print("This camera or current mode does not expose configurable binning.")
-        return False
+            # 3) Poner ROI en estado seguro
+            try:
+                nm.FindNode("OffsetX").SetValue(0)
+                nm.FindNode("OffsetY").SetValue(0)
+                print("Offsets reset to 0")
+            except Exception as e:
+                print("Could not reset offsets:", e)
 
+            # 4) Intentar binning horizontal y vertical juntos
+            try:
+                h = nm.FindNode("BinningHorizontal")
+                v = nm.FindNode("BinningVertical")
+
+                print("Current binning:", h.Value(), v.Value())
+                h.SetValue(bx)
+                v.SetValue(by)
+                print(f"Binning applied: {bx}x{by}")
+                return True
+            except Exception as e:
+                print("Could not set binning:", e)
+                return False
 
     def get_image(self):
         """
