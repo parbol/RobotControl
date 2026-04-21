@@ -122,46 +122,58 @@ class Camera:
 
     ### Let's try to change binning directly from software
     def set_binning(self, bx=2, by=2):
-            nm = self.remote_device_nodemap
+        nm = self.remote_device_nodemap
 
-            # 1) Asegurar que no hay adquisición activa
-            # No llames esto después de StartAcquisition
+        try:
+            sel = nm.FindNode("BinningSelector")
+            sel.SetCurrentEntry("Region0")
+            print("BinningSelector = Region0")
+        except Exception as e:
+            print("Could not set BinningSelector:", e)
 
-            # 2) Intentar seleccionar el motor de binning si existe
-            try:
-                sel = nm.FindNode("BinningSelector")
-                # Prueba primero Region0; si falla, luego "Sensor"
-                try:
-                    sel.SetCurrentEntry("Region0")
-                    print("BinningSelector = Region0")
-                except Exception:
-                    sel.SetCurrentEntry("Sensor")
-                    print("BinningSelector = Sensor")
-            except Exception as e:
-                print("No BinningSelector or cannot set it:", e)
+        try:
+            nm.FindNode("OffsetX").SetValue(0)
+            nm.FindNode("OffsetY").SetValue(0)
+            print("Offsets reset to 0")
+        except Exception as e:
+            print("Could not reset offsets:", e)
 
-            # 3) Poner ROI en estado seguro
-            try:
-                nm.FindNode("OffsetX").SetValue(0)
-                nm.FindNode("OffsetY").SetValue(0)
-                print("Offsets reset to 0")
-            except Exception as e:
-                print("Could not reset offsets:", e)
+        try:
+            h = nm.FindNode("BinningHorizontal")
+            v = nm.FindNode("BinningVertical")
 
-            # 4) Intentar binning horizontal y vertical juntos
-            try:
-                h = nm.FindNode("BinningHorizontal")
-                v = nm.FindNode("BinningVertical")
+            print("Current binning:", h.Value(), v.Value())
 
-                print("Current binning:", h.Value(), v.Value())
-                h.SetValue(bx)
-                v.SetValue(by)
-                print(f"Binning applied: {bx}x{by}")
-                return True
-            except Exception as e:
-                print("Could not set binning:", e)
-                return False
+            h.SetValue(bx)
+            v.SetValue(by)
 
+            print(f"Binning applied: {bx}x{by}")
+            return True
+
+        except Exception as e:
+            print(f"Could not set binning. ERR: {e}")
+            return False
+        
+    def change_binning_runtime(self, bx, by):
+        # 1. parar adquisición
+        try:
+            self.datastream.StopAcquisition()
+            self.remote_device_nodemap.FindNode("AcquisitionStop").Execute()
+            print("Acquisition stopped")
+        except Exception as e:
+            print("Could not stop acquisition:", e)
+
+        # 2. cambiar binning
+        self.set_binning(bx, by)
+
+        # 3. volver a arrancar
+        try:
+            self.datastream.StartAcquisition()
+            self.remote_device_nodemap.FindNode("AcquisitionStart").Execute()
+            print("Acquisition restarted")
+        except Exception as e:
+            print("Could not restart acquisition:", e)
+        
     def get_image(self):
         """
         Triggers the camera and gets a picture of type Image
