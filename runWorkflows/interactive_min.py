@@ -1,4 +1,5 @@
 import socket
+import time
 
 from CameraClient.RobotCamera import RobotCamera
 from RobotBrain.RobotController import RobotController
@@ -15,6 +16,27 @@ class InteractiveRobotController(RobotController):
         except Exception:
             pass
         raise RuntimeError("RobotController requested exit")
+
+    def stop_remote_mode(self, timeout_seconds=3.0):
+        self.sendMessage("STOP:")
+        reply = self._read_optional_robot_message(timeout_seconds)
+        if reply:
+            self.decodeMessage(reply)
+        return reply
+
+    def _read_optional_robot_message(self, timeout_seconds):
+        deadline = time.time() + timeout_seconds
+        text = ""
+        while time.time() < deadline and len(text) < self.msg_length:
+            chunk = self.serial.read(self.msg_length - len(text))
+            if not chunk:
+                continue
+            text += chunk.decode()
+            if "XXXXX" in text:
+                break
+        if "@@@@@" not in text or "XXXXX" not in text:
+            return None
+        return text[text.find("@@@@@") + 5:text.find("XXXXX")]
 
 
 class InteractiveControl:
@@ -79,7 +101,7 @@ class InteractiveControl:
         if robot_controller is None:
             return
         try:
-            robot_controller.sendMessage("STOP:")
+            robot_controller.stop_remote_mode()
         except Exception:
             pass
         try:
