@@ -46,6 +46,26 @@ class RobotCamera:
     ##############################################################################
 
     ##############################################################################
+    def set_exposure(self, exposure_time_seg):
+        self.sendMessage(f'SET EXPOSURE {exposure_time_seg}')
+        data = self.getMessage()
+        if data == 'OK':
+            return True
+        self.printError(data)
+        return False
+    ##############################################################################
+
+    ##############################################################################
+    def change_binningRuntime(self, bx, by):
+        self.sendMessage(f'CHANGE BINNING {bx} {by}')
+        data = self.getMessage()
+        if data == 'OK':
+            return True
+        self.printError(data)
+        return False
+    ##############################################################################
+
+    ##############################################################################
     def stop(self):
         self.sendMessage('STOP')
         self.exit()

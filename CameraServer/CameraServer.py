@@ -160,9 +160,50 @@ class CameraServer:
         elif data == 'TAKE PICTURE': 
             self.printLog('Client says: ' + data)
             return self.handlePicture()
+        elif data.startswith('SET EXPOSURE'):
+            self.printLog('Client says: ' + data)
+            return self.handle_setExposure(data)
+        elif data.startswith('CHANGE BINNING'):
+            self.printLog('Client says: ' + data)
+            return self.handle_changeBinningRuntime(data)
         else:
             self.printError("Unexpected command received")
             return False
+        return True
+    ##############################################################################
+
+    ##############################################################################
+    def handle_setExposure(self, data):
+        words = data.split()
+        if len(words) != 3:
+            self.sendMessage('ERROR: SET EXPOSURE requires one value')
+            return True
+        try:
+            exposure_time_seg = float(words[2])
+            self.camera.set_exposure(exposure_time_seg)
+        except Exception as e:
+            self.sendMessage('ERROR: ' + str(e))
+            return True
+        self.sendMessage('OK')
+        return True
+    ##############################################################################
+
+    ##############################################################################
+    def handle_changeBinningRuntime(self, data):
+        words = data.split()
+        if len(words) != 4:
+            self.sendMessage('ERROR: CHANGE BINNING requires bx and by')
+            return True
+        try:
+            bx = int(words[2])
+            by = int(words[3])
+            if not self.camera.change_binningRuntime(bx, by):
+                self.sendMessage('ERROR: binning was not applied')
+                return True
+        except Exception as e:
+            self.sendMessage('ERROR: ' + str(e))
+            return True
+        self.sendMessage('OK')
         return True
     ##############################################################################
 
@@ -208,4 +249,3 @@ class CameraServer:
         self.connection.sendall(l)
         f.close()
     ##############################################################################
-

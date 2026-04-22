@@ -154,7 +154,8 @@ class Camera:
             print(f"Could not set binning. ERR: {e}")
             return False
         
-    def change_binning_runtime(self, bx, by):
+    def change_binningRuntime(self, bx, by):
+        success = True
         # 1. parar adquisición
         try:
             self.datastream.StopAcquisition()
@@ -162,9 +163,10 @@ class Camera:
             print("Acquisition stopped")
         except Exception as e:
             print("Could not stop acquisition:", e)
+            success = False
 
         # 2. cambiar binning
-        self.set_binning(bx, by)
+        success = self.set_binning(bx, by) and success
 
         # 3. volver a arrancar
         try:
@@ -173,6 +175,12 @@ class Camera:
             print("Acquisition restarted")
         except Exception as e:
             print("Could not restart acquisition:", e)
+            success = False
+
+        return success
+
+    def change_binning_runtime(self, bx, by):
+        return self.change_binningRuntime(bx, by)
         
     def get_image(self):
         """
