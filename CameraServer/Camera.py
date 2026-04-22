@@ -299,8 +299,6 @@ class Camera:
                 i += 1
 
             print(f"Final: sat_fraction={sat_fraction:.5f}, exposure={self.exposure_time_seg:.6f}s")
-            self.get_image()
-            self.image.display()
             return self.exposure_time_seg, sat_fraction
 
         except Exception as e:
