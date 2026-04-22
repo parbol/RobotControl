@@ -349,13 +349,16 @@ class Camera:
         self.autofocus_thread.start()
         return True
 
-    def autofocus_acquisition(self, max_photos = 100, time_photo = 0.1):
+    def autofocus_acquisition(self, max_photos = 100, time_photo = 0.2):
         return self.start_autofocusAcquisition(max_photos, time_photo)
 
     def stop_autofocusAcquisition(self, timeout = 5.0):
         self.runAutofocus = False
         if self.autofocus_thread is not None:
             self.autofocus_thread.join(timeout=timeout)
+
+        print(self.sharp_array)
+        print(self.time_stamps)
         return self.sharp_array, self.time_stamps, self.autofocusReachedMaxPhotos
 
     def _autofocusAcquisitionLoop(self, max_photos, time_photo):
