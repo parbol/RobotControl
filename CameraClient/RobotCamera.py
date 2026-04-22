@@ -78,6 +78,46 @@ class RobotCamera:
     ##############################################################################
 
     ##############################################################################
+    def start_autofocusAcquisition(self, max_photos=100, dead_time=0.1):
+        self.sendMessage(f'START AUTOFOCUS ACQUISITION {max_photos} {dead_time}')
+        data = self.getMessage()
+        if data == 'OK':
+            return True
+        self.printError(data)
+        return False
+    ##############################################################################
+
+    ##############################################################################
+    def stop_autofocusAcquisition(self):
+        self.sendMessage('STOP AUTOFOCUS ACQUISITION')
+        data = self.getMessage()
+        words = data.split()
+        if len(words) == 3 and words[0] == 'OK' and words[1] == 'N':
+            return {
+                'n': int(words[2]),
+                'best_index': None,
+                'best_sharpness': None,
+                'best_time': None,
+            }
+        if (
+            len(words) == 9
+            and words[0] == 'OK'
+            and words[1] == 'N'
+            and words[3] == 'BEST_INDEX'
+            and words[5] == 'BEST_SHARPNESS'
+            and words[7] == 'BEST_TIME'
+        ):
+            return {
+                'n': int(words[2]),
+                'best_index': int(words[4]),
+                'best_sharpness': float(words[6]),
+                'best_time': float(words[8]),
+            }
+        self.printError(data)
+        return None
+    ##############################################################################
+
+    ##############################################################################
     def stop(self):
         self.sendMessage('STOP')
         self.exit()

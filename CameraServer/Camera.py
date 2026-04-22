@@ -17,7 +17,9 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from PIL import Image 
-
+import cv2
+import time
+import threading
 
 class Camera:
     """
@@ -39,6 +41,12 @@ class Camera:
         self.open_device()
 
         self.image = None
+
+        # Autofocus parameters
+        self.runAutofocus = False
+        self.autofocus_thread = None
+        self.sharp_array = []
+        self.time_stamps = []
 
         
 
@@ -306,10 +314,58 @@ class Camera:
             ids_peak.Library.Close()
             return None
 
-
-
-
     def fiducial_protocole(self):
         # Toma imagen, genera objeto Imagen, la binariza y extrae el centro del fiducial.
         print('ToDo')
-        
+
+    #################################################################################################################
+    #### AUTOFOCUS FUNCTION BLOCK
+
+    def sharpness_tenengrad(self, img):
+        gx = cv2.Sobel(img, cv2.CV_64F, 1, 0)
+        gy = cv2.Sobel(img, cv2.CV_64F, 0, 1)
+        return np.mean(gx**2 + gy**2)
+
+    def get_sharpness(self):
+        img_array = np.array(self.image)
+        sharpness = self.sharpness_tenengrad(img_array)
+        return sharpness
+
+    # Launch in individual thread
+    def start_autofocusAcquisition(self, max_photos = 100, dead_time = 0.1):
+        if self.autofocus_thread is not None and self.autofocus_thread.is_alive():
+            return False
+
+        self.runAutofocus = True
+        self.sharp_array = []
+        self.time_stamps = []
+        self.autofocus_thread = threading.Thread(
+            target=self._autofocusAcquisitionLoop,
+            args=(max_photos, dead_time),
+            daemon=True,
+        )
+        self.autofocus_thread.start()
+        return True
+
+    def autofocus_acquisition(self, max_photos = 100, dead_time = 0.1):
+        return self.start_autofocusAcquisition(max_photos, dead_time)
+
+    def stop_autofocusAcquisition(self, timeout = 5.0):
+        self.runAutofocus = False
+        if self.autofocus_thread is not None:
+            self.autofocus_thread.join(timeout=timeout)
+        return self.sharp_array, self.time_stamps
+
+    def _autofocusAcquisitionLoop(self, max_photos, dead_time):
+        self.runAutofocus = True
+        index_loop = 0
+
+        while self.runAutofocus and index_loop < max_photos:
+            index_loop += 1
+
+            self.get_image()
+
+            self.sharp_array.append(self.get_sharpness())
+            self.time_stamps.append(time.time())
+            time.sleep(dead_time)
+        self.runAutofocus = False

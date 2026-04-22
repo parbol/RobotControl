@@ -169,6 +169,12 @@ class CameraServer:
         elif data.startswith('AUTO EXPOSURE SATURATION'):
             self.printLog('Client says: ' + data)
             return self.handle_autoExposureSaturation(data)
+        elif data.startswith('START AUTOFOCUS ACQUISITION'):
+            self.printLog('Client says: ' + data)
+            return self.handle_startAutofocusAcquisition(data)
+        elif data.startswith('STOP AUTOFOCUS ACQUISITION'):
+            self.printLog('Client says: ' + data)
+            return self.handle_stopAutofocusAcquisition(data)
         else:
             self.printError("Unexpected command received")
             return False
@@ -233,6 +239,48 @@ class CameraServer:
             self.sendMessage('ERROR: ' + str(e))
             return True
         self.sendMessage(f'OK EXPOSURE {exposure_time_seg} SATURATION {saturated_fraction}')
+        return True
+    ##############################################################################
+
+    ##############################################################################
+    def handle_startAutofocusAcquisition(self, data):
+        words = data.split()
+        if len(words) != 5:
+            self.sendMessage('ERROR: START AUTOFOCUS ACQUISITION requires max_photos dead_time')
+            return True
+        try:
+            max_photos = int(words[3])
+            dead_time = float(words[4])
+            if not self.camera.start_autofocusAcquisition(max_photos, dead_time):
+                self.sendMessage('ERROR: autofocus acquisition already running')
+                return True
+        except Exception as e:
+            self.sendMessage('ERROR: ' + str(e))
+            return True
+        self.sendMessage('OK')
+        return True
+    ##############################################################################
+
+    ##############################################################################
+    def handle_stopAutofocusAcquisition(self, data):
+        words = data.split()
+        if len(words) != 3:
+            self.sendMessage('ERROR: STOP AUTOFOCUS ACQUISITION does not take arguments')
+            return True
+        try:
+            sharp_array, time_stamps = self.camera.stop_autofocusAcquisition()
+            n_points = len(sharp_array)
+            if n_points == 0:
+                self.sendMessage('OK N 0')
+                return True
+            best_index = max(range(n_points), key=lambda i: sharp_array[i])
+            self.sendMessage(
+                f'OK N {n_points} BEST_INDEX {best_index} '
+                f'BEST_SHARPNESS {sharp_array[best_index]} BEST_TIME {time_stamps[best_index]}'
+            )
+        except Exception as e:
+            self.sendMessage('ERROR: ' + str(e))
+            return True
         return True
     ##############################################################################
 
