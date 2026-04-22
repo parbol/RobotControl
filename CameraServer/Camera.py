@@ -35,7 +35,7 @@ class Camera:
         self.exposure_time_seg = 1/250
         
         self.search_device()
-        self.name = self.device_descriptor.DisplayName()
+        self.name = self.device_descriptors.DisplayName()
         self.open_device()
 
         self.image = None
