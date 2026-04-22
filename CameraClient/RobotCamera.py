@@ -78,8 +78,8 @@ class RobotCamera:
     ##############################################################################
 
     ##############################################################################
-    def start_autofocusAcquisition(self, max_photos=100, dead_time=0.1):
-        self.sendMessage(f'START AUTOFOCUS ACQUISITION {max_photos} {dead_time}')
+    def start_autofocusAcquisition(self, max_photos=100, time_photo=0.2):
+        self.sendMessage(f'START AUTOFOCUS ACQUISITION {max_photos} {time_photo}')
         data = self.getMessage()
         if data == 'OK':
             return True
