@@ -354,6 +354,9 @@ class Camera:
         self.runAutofocus = False
         if self.autofocus_thread is not None:
             self.autofocus_thread.join(timeout=timeout)
+        #deb
+        print(self.sharp_array)
+        print(self.time_stamps)
         return self.sharp_array, self.time_stamps
 
     def _autofocusAcquisitionLoop(self, max_photos, dead_time):
@@ -369,3 +372,4 @@ class Camera:
             self.time_stamps.append(time.time())
             time.sleep(dead_time)
         self.runAutofocus = False
+
