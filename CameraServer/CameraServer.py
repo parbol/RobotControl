@@ -166,6 +166,9 @@ class CameraServer:
         elif data.startswith('CHANGE BINNING'):
             self.printLog('Client says: ' + data)
             return self.handle_changeBinningRuntime(data)
+        elif data.startswith('AUTO EXPOSURE SATURATION'):
+            self.printLog('Client says: ' + data)
+            return self.handle_autoExposureSaturation(data)
         else:
             self.printError("Unexpected command received")
             return False
@@ -204,6 +207,32 @@ class CameraServer:
             self.sendMessage('ERROR: ' + str(e))
             return True
         self.sendMessage('OK')
+        return True
+    ##############################################################################
+
+    ##############################################################################
+    def handle_autoExposureSaturation(self, data):
+        words = data.split()
+        if len(words) != 6:
+            self.sendMessage('ERROR: AUTO EXPOSURE SATURATION requires goal tolerance single_channel')
+            return True
+        try:
+            saturated_fractionGoal = float(words[3])
+            fraction_tolerance = float(words[4])
+            single_channel = bool(int(words[5]))
+            result = self.camera.auto_exposureSaturation(
+                saturated_fractionGoal,
+                fraction_tolerance,
+                single_channel,
+            )
+            if result is None:
+                self.sendMessage('ERROR: auto exposure saturation failed')
+                return True
+            exposure_time_seg, saturated_fraction = result
+        except Exception as e:
+            self.sendMessage('ERROR: ' + str(e))
+            return True
+        self.sendMessage(f'OK EXPOSURE {exposure_time_seg} SATURATION {saturated_fraction}')
         return True
     ##############################################################################
 

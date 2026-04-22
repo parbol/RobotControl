@@ -66,6 +66,18 @@ class RobotCamera:
     ##############################################################################
 
     ##############################################################################
+    def auto_exposureSaturation(self, saturated_fractionGoal=0.05, fraction_tolerance=0.01, single_channel=False):
+        single_channel_value = 1 if single_channel else 0
+        self.sendMessage(f'AUTO EXPOSURE SATURATION {saturated_fractionGoal} {fraction_tolerance} {single_channel_value}')
+        data = self.getMessage()
+        words = data.split()
+        if len(words) == 5 and words[0] == 'OK' and words[1] == 'EXPOSURE' and words[3] == 'SATURATION':
+            return float(words[2]), float(words[4])
+        self.printError(data)
+        return None
+    ##############################################################################
+
+    ##############################################################################
     def stop(self):
         self.sendMessage('STOP')
         self.exit()

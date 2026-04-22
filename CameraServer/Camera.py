@@ -246,6 +246,70 @@ class Camera:
             print('No device is free and available. ERR:' + str(e))
             ids_peak.Library.Close()
 
+    def auto_exposureSaturation(self, saturated_fractionGoal=0.05, fraction_tolerance=0.01, single_channel=False):
+        """
+        Sets automatically exposure, taking saturated pixels fraction as function with tolerance
+        """
+        try:
+            saturated_value = 254
+            a = 0.5
+            max_iter = 15
+            i = 0
+
+            self.set_exposure(self.exposure_time_seg)
+            self.get_image()
+            img_array = np.array(self.image)
+
+            # check saturated fraction by channel or all channels at once
+            if img_array.ndim == 3:
+                if single_channel:
+                    sat_fraction = np.mean(np.any(img_array >= saturated_value, axis=2))
+                else:
+                    sat_fraction = np.mean(np.all(img_array >= saturated_value, axis=2))
+            else:
+                sat_fraction = np.mean(img_array >= saturated_value)
+
+            while abs(sat_fraction - saturated_fractionGoal) > fraction_tolerance and i < max_iter:
+                print(f"Iter {i}: sat_fraction={sat_fraction:.5f}, exposure={self.exposure_time_seg:.6f}s")
+
+                safe_sat = max(sat_fraction, 1e-6)
+                factor = (saturated_fractionGoal / safe_sat) ** a
+
+                # si no hay ningún saturado, empuja un poco hacia arriba
+                if sat_fraction == 0:
+                    factor = 1.5
+
+                # limitar cambios bruscos
+                factor = max(0.5, min(2.0, factor))
+
+                self.exposure_time_seg *= factor
+                self.set_exposure(self.exposure_time_seg)
+
+                self.get_image()
+                img_array = np.array(self.image)
+
+                if img_array.ndim == 3:
+                    if single_channel:
+                        sat_fraction = np.mean(np.any(img_array >= saturated_value, axis=2))
+                    else:
+                        sat_fraction = np.mean(np.all(img_array >= saturated_value, axis=2))
+                else:
+                    sat_fraction = np.mean(img_array >= saturated_value)
+
+                i += 1
+
+            print(f"Final: sat_fraction={sat_fraction:.5f}, exposure={self.exposure_time_seg:.6f}s")
+            self.get_image()
+            self.image.display()
+            return self.exposure_time_seg, sat_fraction
+
+        except Exception as e:
+            print('No device is free and available. ERR:' + str(e))
+            ids_peak.Library.Close()
+            return None
+
+
+
 
     def fiducial_protocole(self):
         # Toma imagen, genera objeto Imagen, la binariza y extrae el centro del fiducial.
