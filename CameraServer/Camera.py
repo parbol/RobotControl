@@ -47,6 +47,7 @@ class Camera:
         self.autofocus_thread = None
         self.sharp_array = []
         self.time_stamps = []
+        self.autofocusReachedMaxPhotos = False
 
         
 
@@ -332,44 +333,49 @@ class Camera:
         return sharpness
 
     # Launch in individual thread
-    def start_autofocusAcquisition(self, max_photos = 100, dead_time = 0.1):
+    def start_autofocusAcquisition(self, max_photos = 100, time_photo = 0.1):
         if self.autofocus_thread is not None and self.autofocus_thread.is_alive():
             return False
 
         self.runAutofocus = True
         self.sharp_array = []
         self.time_stamps = []
+        self.autofocusReachedMaxPhotos = False
         self.autofocus_thread = threading.Thread(
             target=self._autofocusAcquisitionLoop,
-            args=(max_photos, dead_time),
+            args=(max_photos, time_photo),
             daemon=True,
         )
         self.autofocus_thread.start()
         return True
 
-    def autofocus_acquisition(self, max_photos = 100, dead_time = 0.1):
-        return self.start_autofocusAcquisition(max_photos, dead_time)
+    def autofocus_acquisition(self, max_photos = 100, time_photo = 0.1):
+        return self.start_autofocusAcquisition(max_photos, time_photo)
 
     def stop_autofocusAcquisition(self, timeout = 5.0):
         self.runAutofocus = False
         if self.autofocus_thread is not None:
             self.autofocus_thread.join(timeout=timeout)
-        #deb
-        print(self.sharp_array)
-        print(self.time_stamps)
-        return self.sharp_array, self.time_stamps
+        return self.sharp_array, self.time_stamps, self.autofocusReachedMaxPhotos
 
-    def _autofocusAcquisitionLoop(self, max_photos, dead_time):
+    def _autofocusAcquisitionLoop(self, max_photos, time_photo):
         self.runAutofocus = True
         index_loop = 0
 
+
         while self.runAutofocus and index_loop < max_photos:
             index_loop += 1
+            start_time = time.perf_counter()
 
             self.get_image()
 
             self.sharp_array.append(self.get_sharpness())
             self.time_stamps.append(time.time())
-            time.sleep(dead_time)
-        self.runAutofocus = False
 
+            while time_photo > time.perf_counter() - start_time:
+                time.sleep(time_photo*0.01) # sleep 1th
+
+        if index_loop >= max_photos:
+            self.autofocusReachedMaxPhotos = True
+            print(f"Warning: autofocus acquisition reached max_photos={max_photos}")
+        self.runAutofocus = False

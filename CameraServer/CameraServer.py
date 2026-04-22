@@ -268,14 +268,15 @@ class CameraServer:
             self.sendMessage('ERROR: STOP AUTOFOCUS ACQUISITION does not take arguments')
             return True
         try:
-            sharp_array, time_stamps = self.camera.stop_autofocusAcquisition()
+            sharp_array, time_stamps, reached_max_photos = self.camera.stop_autofocusAcquisition()
             n_points = len(sharp_array)
+            reached_max_photos_value = 1 if reached_max_photos else 0
             if n_points == 0:
-                self.sendMessage('OK N 0')
+                self.sendMessage(f'OK N 0 LIMIT {reached_max_photos_value}')
                 return True
             best_index = max(range(n_points), key=lambda i: sharp_array[i])
             self.sendMessage(
-                f'OK N {n_points} BEST_INDEX {best_index} '
+                f'OK N {n_points} LIMIT {reached_max_photos_value} BEST_INDEX {best_index} '
                 f'BEST_SHARPNESS {sharp_array[best_index]} BEST_TIME {time_stamps[best_index]}'
             )
         except Exception as e:
