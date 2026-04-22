@@ -1,56 +1,88 @@
-# control_minimo.py
 import socket
+
 from CameraClient.RobotCamera import RobotCamera
 from RobotBrain.RobotController import RobotController
 
-class ControlMinimo:
-    def __init__(self, ip_cam, port_cam, device_robot, bauds=115200, foto_out="foto.png", debug=False):
-        self.cameraCliente = RobotCamera(ip_cam, port_cam, foto_out, robot3D=None)
-        self.robot = RobotController(device_robot, bauds, self.cameraCliente, robot3D=None, debug=debug)
 
-        # Workaround: RobotController.exit() usa self.camera, pero en __init__ no la asigna
-        self.robot.camera = self.cameraCliente
+class InteractiveRobotController(RobotController):
+    def __init__(self, device, bauds, camera_client, robot_model=None, debug=False):
+        self.camera = camera_client
+        super().__init__(device, bauds, camera_client, robot_model, debug)
 
-    def tomar_foto(self, ruta=None):
-        if ruta:
-            self.cameraCliente.changeFileName(ruta)
-        self.cameraCliente.takePic()
-        return self.cameraCliente.fileName
-
-    def mover_robot(self, x, y, z, rz, velocidad=None, orientation="s"):
-        if velocidad is not None:
-            self.robot.changeVelocity(velocidad)  # 0..100
-        ok = self.robot.goTo(x, y, z, rz, orientation=orientation)
-        return ok, self.robot.getPositionXYZ()
-
-    def estado_robot(self):
-        self.robot.askStatus()
-        return {
-            "xyz": self.robot.getPositionXYZ(),
-            "j1j2j3": self.robot.getPositionJ1J2J3(),
-            "valves": self.robot.getValveStatus(),
-            "em": self.robot.getEM(),
-        }
-
-    def cerrar(self):
-        # Cierre sin sys.exit(), para seguir en REPL
+    def exit(self):
         try:
-            self.robot.sendMessage("STOP:")
+            self.serial.close()
+        except Exception:
+            pass
+        raise RuntimeError("RobotController requested exit")
+
+
+class InteractiveControl:
+    def __init__(
+        self,
+        camera_ip="192.168.0.189",
+        camera_port=8080,
+        robot_device="/dev/ttyUSB0",
+        robot_bauds=115200,
+        picture_path="picture.png",
+        debug=False,
+    ):
+        self.robot_device = robot_device
+        self.robot_bauds = robot_bauds
+        self.debug = debug
+        self.robot_model = None
+        self.camera_client = RobotCamera(
+            camera_ip,
+            camera_port,
+            picture_path,
+            self.robot_model,
+        )
+
+    def take_picture(self, picture_path=None):
+        if picture_path is not None:
+            self.camera_client.changeFileName(picture_path)
+        self.camera_client.takePic()
+        return self.camera_client.fileName
+
+    def move_robot(self, x, y, z, rz, velocity=None, orientation="s"):
+        robot_controller = None
+        try:
+            robot_controller = InteractiveRobotController(
+                self.robot_device,
+                self.robot_bauds,
+                self.camera_client,
+                self.robot_model,
+                self.debug,
+            )
+            if velocity is not None:
+                robot_controller.changeVelocity(velocity)
+            moved = robot_controller.goTo(x, y, z, rz, orientation=orientation)
+            return moved, robot_controller.getPositionXYZ()
+        finally:
+            self._close_robot_controller(robot_controller)
+
+    def close(self):
+        try:
+            self.camera_client.sendMessage("STOP")
         except Exception:
             pass
         try:
-            self.cameraCliente.sendMessage("STOP")
+            self.camera_client.s.shutdown(socket.SHUT_RDWR)
         except Exception:
             pass
         try:
-            self.robot.serial.close()
+            self.camera_client.s.close()
+        except Exception:
+            pass
+
+    def _close_robot_controller(self, robot_controller):
+        if robot_controller is None:
+            return
+        try:
+            robot_controller.sendMessage("STOP:")
         except Exception:
             pass
         try:
-            self.cameraCliente.s.shutdown(socket.SHUT_RDWR)
-        except Exception:
-            pass
-        try:
-            self.cameraCliente.s.close()
+            robot_controller.serial.close()
         except Exception:
             pass
