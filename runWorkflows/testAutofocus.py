@@ -32,6 +32,8 @@ if __name__ == "__main__":
     print("Robot initial position XYZ:", robot_controller.getPositionXYZ())
 
     try:
+        robot_camera.set_exposure(0.00025)
+
         summary, focus_z, fraction = autofocus_controller.start_AutoFocus(
             focus_position,
             autofocus_range,
