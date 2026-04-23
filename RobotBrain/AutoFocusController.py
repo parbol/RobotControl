@@ -30,7 +30,7 @@ class AutoFocusController:
         self.camera = camera
 
 
-    def start_AutoFocus(self, position, z_range, z_speed):
+    def start_AutoFocus(self, position, z_range, z_speed, move_toFocus = False):
         # move to position but z = position("z")+z_range/2 (start position of autofocus)
         if isinstance(position, dict):
             x = position["x"]
@@ -48,10 +48,9 @@ class AutoFocusController:
         if not self.camera.start_autofocusAcquisition():
             raise RuntimeError("Could not start autofocus acquisition")
 
-        # move to position but z = position("z")+z_range/2 and speed = z_speed
-        previous_velocity = getattr(self.robot, "velocity", None)
-        if z_speed is not None:
-            self.robot.changeVelocity(z_speed)
+        # move to position but z = position("z")-z_range/2 and speed = z_speed
+        stored_speed = self.robot.get_velocity()
+        self.robot.changeVelocity(z_speed)
 
         summary = None
         try:
@@ -59,7 +58,14 @@ class AutoFocusController:
         # stop autofocus_acquisition and get summary
         finally:
             summary = self.camera.stop_autofocusAcquisition()
-            if previous_velocity is not None:
-                self.robot.changeVelocity(previous_velocity)
 
-        return summary
+        fraction = self.camera.estimate_focusFraction()
+        focus_z = start_z - fraction * z_range
+
+        # Go back to prev. speed and move to estimated focus
+        self.robot.changeVelocity(stored_speed)
+
+        if move_toFocus == True:
+            self.robot.goTo(x, y, focus_z, rz)
+
+        return summary, focus_z, fraction

@@ -15,6 +15,7 @@ import ids_peak.ids_peak_ipl_extension as ids_ipl_extension
 #from ids_peak import ids_ipl_extension
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy.interpolate import CubicSpline
 
 from PIL import Image 
 import cv2
@@ -382,3 +383,51 @@ class Camera:
             self.autofocusReachedMaxPhotos = True
             print(f"Warning: autofocus acquisition reached max_photos={max_photos}")
         self.runAutofocus = False
+        
+
+    def estimate_focusFraction(self, use_interpolation = True):
+        dead_time = 0.2
+
+        sharp_vec = np.array(self.sharp_array) 
+        time_vec = np.array(self.time_stamps)
+
+        if sharp_vec.shape[0] == 0 or time_vec.shape[0] == 0:
+            raise RuntimeError("No autofocus data available to estimate focus fraction")
+
+        t0 = time_vec[0]
+        t1 = time_vec[-1]
+
+        mask = (time_vec >= t0 + dead_time) & (time_vec <= t1 - dead_time)
+        sharp_vec_ROI = sharp_vec[mask]
+        time_vec_ROI = time_vec[mask]
+
+        # ERRORs 
+
+        if sharp_vec_ROI.shape[0] == 0:
+            raise RuntimeError("No autofocus points available inside the selected time range")
+
+        max_arg = np.argmax(sharp_vec_ROI)
+
+        if sharp_vec_ROI.shape[0] < 5:
+            raise RuntimeError("Insufficient number of autofocus points to compute focus fraction")
+
+        if max_arg == 0 or max_arg == (sharp_vec_ROI.shape[0] - 1):
+            raise RuntimeError("Focus maximum found at the border of the autofocus range")
+
+
+        # If pass error block -> Interpolate
+
+        if use_interpolation:
+            spline = CubicSpline(time_vec_ROI, sharp_vec_ROI)
+            time_interp = np.linspace(time_vec_ROI[0], time_vec_ROI[-1], 1000)
+            sharp_interp = spline(time_interp)
+            max_arg_interp = np.argmax(sharp_interp)
+            return (time_interp[max_arg_interp] - time_vec_ROI[0]) / (time_vec_ROI[-1] - time_vec_ROI[0])
+
+        else:
+            return max_arg / (sharp_vec_ROI.shape[0] - 1)
+
+    
+            
+        
+        

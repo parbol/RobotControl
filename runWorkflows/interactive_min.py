@@ -108,3 +108,24 @@ class InteractiveControl:
             robot_controller.serial.close()
         except Exception:
             pass
+
+
+
+#from runWorkflows.interactive_min import InteractiveControl
+#control = InteractiveControl()
+#
+#control.take_picture("picture_001.png")
+#
+#control.camera_client.auto_exposureSaturation(0.001, 0.0001)
+#
+#control.camera_client.set_exposure(1/1024)
+#
+#control.camera_client.change_binningRuntime(bx=2, by=2)
+#
+#control.move_robot(x=434.815, y=-147.438, z=127.388, rz=-72.23, velocity=50.0)
+#
+#control.camera_client.start_autofocusAcquisition(max_photos=100, time_photo=0.0)
+#control.camera_client.stop_autofocusAcquisition()
+#
+#control.close()
+

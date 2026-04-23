@@ -213,6 +213,9 @@ class RobotController:
     ##############################################################################
   
     ##############################################################################
+    def get_velocity(self):
+        return self.velocity
+
     def changeVelocity(self, v):
         if v >= 0 and v<=100:
             self.velocity = v
