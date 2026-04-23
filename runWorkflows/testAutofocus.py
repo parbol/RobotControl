@@ -12,7 +12,7 @@ if __name__ == "__main__":
     parser.add_option("-p", "--port", dest="port", type=int, default=8080, help="Port of the camera server.")
     parser.add_option("-d", "--device", dest="device", type="string", default="/dev/ttyUSB0", help="Robot device name.")
     parser.add_option("-b", "--bauds", dest="bauds", type=int, default=115200, help="Robot bauds.")
-    parser.add_option("-m", "--move-to-focus", dest="move_to_focus", action="store_true", default=False, help="Move robot to estimated focus at the end.")
+    parser.add_option("-m", "--move-to-focus", dest="move_to_focus", action="store_true", default=True, help="Move robot to estimated focus at the end.")
     (options, args) = parser.parse_args()
 
     focus_position = (434.815, -147.438, 127.388, -72.23)
@@ -43,5 +43,8 @@ if __name__ == "__main__":
         print("Estimated focus z:", focus_z)
         print("Robot final velocity:", robot_controller.get_velocity())
         print("Robot final position XYZ:", robot_controller.getPositionXYZ())
+        robot_camera.changeFileName("runWorkflows/picture_finalFocus.png")
+        robot_camera.takePic()
+        print("Final focus picture saved to:", "runWorkflows/picture_finalFocus.png")
     finally:
         robot_controller.stop()
