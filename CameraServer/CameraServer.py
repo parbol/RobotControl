@@ -175,6 +175,9 @@ class CameraServer:
         elif data.startswith('STOP AUTOFOCUS ACQUISITION'):
             self.printLog('Client says: ' + data)
             return self.handle_stopAutofocusAcquisition(data)
+        elif data.startswith('ESTIMATE FOCUS FRACTION'):
+            self.printLog('Client says: ' + data)
+            return self.handle_estimateFocusFraction(data)
         else:
             self.printError("Unexpected command received")
             return False
@@ -282,6 +285,22 @@ class CameraServer:
         except Exception as e:
             self.sendMessage('ERROR: ' + str(e))
             return True
+        return True
+    ##############################################################################
+
+    ##############################################################################
+    def handle_estimateFocusFraction(self, data):
+        words = data.split()
+        if len(words) != 4:
+            self.sendMessage('ERROR: ESTIMATE FOCUS FRACTION requires use_interpolation')
+            return True
+        try:
+            use_interpolation = bool(int(words[3]))
+            fraction = self.camera.estimate_focusFraction(use_interpolation=use_interpolation)
+        except Exception as e:
+            self.sendMessage('ERROR: ' + str(e))
+            return True
+        self.sendMessage(f'OK FRACTION {fraction}')
         return True
     ##############################################################################
 

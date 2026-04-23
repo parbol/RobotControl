@@ -121,6 +121,18 @@ class RobotCamera:
     ##############################################################################
 
     ##############################################################################
+    def estimate_focusFraction(self, use_interpolation=True):
+        use_interpolation_value = 1 if use_interpolation else 0
+        self.sendMessage(f'ESTIMATE FOCUS FRACTION {use_interpolation_value}')
+        data = self.getMessage()
+        words = data.split()
+        if len(words) == 3 and words[0] == 'OK' and words[1] == 'FRACTION':
+            return float(words[2])
+        self.printError(data)
+        return None
+    ##############################################################################
+
+    ##############################################################################
     def stop(self):
         self.sendMessage('STOP')
         self.exit()

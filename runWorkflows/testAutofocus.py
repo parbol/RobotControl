@@ -21,6 +21,7 @@ if __name__ == "__main__":
 
     robot_camera = RobotCamera(options.ip, options.port, "picture.png", None)
     robot_controller = RobotController(options.device, options.bauds, robot_camera, None, True)
+    robot_controller.camera = robot_camera
     autofocus_controller = AutoFocusController(robot_controller, robot_camera)
 
     print("Autofocus input position:", focus_position)
