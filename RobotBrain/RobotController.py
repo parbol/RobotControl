@@ -264,6 +264,33 @@ class RobotController:
             return False
     ##############################################################################
 
+
+    ##############################################################################
+    def goToVelAcDc(self, moves_params): # moves_params = [x, y, z, rz, vel, ac, dc]
+        # Total control de la velocidad aceleracion y deceleracion
+        moves_paramsStr = ["+"+str(i) if i>=0 else str(i) for i in moves_params]
+
+        cadena = 'MOVE-TO:'
+        for i in moves_paramsStr:
+            cadena += i
+        
+        self.sendMessage(cadena)
+        data = self.getMessage()
+        if not self.decodeMessage(data):
+            self.printError(f'There was a problem decoding the message from the Robot')
+            return False
+
+        # Check the robot is in the desire position
+        if (self.position_xyz[0] - x)**2 + (self.position_xyz[1] - y)**2 + (self.position_xyz[2] - z)**2 < 0.01**2: 
+            return True
+        else:
+            self.printError(f'Robot position ({self.position_xyz}) does not match the required position ({[x, y, z]})')
+            self.exit()
+            return False
+    ##############################################################################
+
+
+
     ##############################################################################
     def moveJ(self, j1, j2, j3, j4):
 
