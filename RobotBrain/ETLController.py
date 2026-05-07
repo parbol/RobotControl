@@ -314,6 +314,81 @@ class ETLController:
 
     ##############################################################################
 
+    ##############################################################################
+    def start_AutoFocus(self, z_range, z_speed, move_toFocus = False):
+        """
+        Perform a fast autofocus scan along the Z axis and estimate the best focus position.
+
+        The autofocus procedure moves the robot from the upper bound of the scan range
+        to the lower bound while the camera continuously acquires autofocus data.
+        
+        Parameters
+        ----------
+        z_range : float
+            Total Z distance covered during the autofocus scan. The scan starts at ``z + z_range / 2`` and ends at
+            ``z - z_range / 2``.
+
+        z_speed : float
+            Z-axis velocity used during the autofocus scan.
+
+        move_toFocus : bool, optional
+            If ``True``, move the robot to the estimated focus position
+            after the scan is completed. Default is ``False``.
+
+        Returns
+        -------
+        summary : object
+            Summary information returned by
+            ``camera.stop_autofocusAcquisition()``.
+
+        focus_z : float
+            Estimated Z position corresponding to the best focus.
+    
+        fraction : float
+            Relative focus position within the scan range, typically between 0 and 1.
+
+        Notes
+        -----
+        - Assumes that the current XY and rotational positions are already correct.
+        - The robot velocity is restored to its original value after the scan,
+          even if an exception occurs during motion.
+        """
+        # XXX - Assuming XY and RZ positions are ok
+        # move to position but z = position("z")+z_range/2 (start position of autofocus)
+        self.updateStatus()
+        z = self.position_xyzrz[2]
+        start_z = z + z_range / 2
+        end_z   = z - z_range / 2
+
+        self.robot.changeZ(start_z)
+
+        # init camera autofocus_acquisition
+        if not self.robotcontroller.camera.start_autofocusAcquisition():
+            raise RuntimeError("Could not start autofocus acquisition")
+
+        # move to position but z = position("z")-z_range/2 and speed = z_speed
+        stored_speed = self.robot.get_velocity()
+        self.robot.changeVelocity(z_speed)
+
+        summary = None
+        try:
+            self.robot.changeZ(end_z)
+        # stop autofocus_acquisition and get summary
+        finally:
+            summary = self.camera.stop_autofocusAcquisition()
+
+        fraction = self.camera.estimate_focusFraction()
+        focus_z = start_z - fraction * z_range
+
+        # Go back to prev. speed and move to estimated focus
+        self.robot.changeVelocity(stored_speed)
+
+        if move_toFocus == True:
+            self.robot.changeZ(focus_z)
+
+        return summary, focus_z, fraction
+    ##############################################################################
+
     # ##############################################################################
     # def wait_user(self):
     # Needed?
@@ -323,6 +398,18 @@ class ETLController:
     # def wait_time(self, seconds: int):
     # Needed?
     ##############################################################################
+    
+    ##############################################################################
+    # Setters                                                                   ##
+    ##############################################################################
+
+    def setVelocity(self, v):
+        if v >= 0 and v<=100:
+            self.robot.changeVelocity = v
+            return True
+        else:
+            self.printError(f"Velocity must be between 0 and 100, it is {v}")
+            return False
 
     ##############################################################################
     # Getters                                                                   ##
@@ -330,16 +417,18 @@ class ETLController:
 
     def getPositionXYZ(self):
         robotcontroller.askStatus()
-        return self.position_xyz
+        return self.position_xyzrz
     def getPositionJ1J2J3(self):
         robotcontroller.askStatus()
-        return self.position_j1j2j3
+        return self.position_j1j2j3j4
     def getValveStatus(self):
         robotcontroller.askStatus()
         return self.valves
     def getEM(self):
         robotcontroller.askStatus()
         return self.em
+    def getVelocity(self):
+        return robotcontroller.getVelocity()
 
     ##############################################################################
 

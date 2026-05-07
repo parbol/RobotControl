@@ -213,7 +213,7 @@ class RobotController:
     ##############################################################################
   
     ##############################################################################
-    def get_velocity(self):
+    def getVelocity(self):
         return self.velocity
 
     def changeVelocity(self, v):
