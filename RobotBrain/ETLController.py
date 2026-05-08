@@ -329,16 +329,20 @@ class ETLController:
     ##############################################################################
 
     def getPositionXYZ(self):
-        robotcontroller.askStatus()
-        return self.position_xyz
+        self.robotcontroller.askStatus()
+        self.updateStatus()
+        return self.position_xyzrz
     def getPositionJ1J2J3(self):
-        robotcontroller.askStatus()
-        return self.position_j1j2j3
+        self.updateStatus()
+        self.robotcontroller.askStatus()
+        return self.position_j1j2j3j4
     def getValveStatus(self):
-        robotcontroller.askStatus()
+        self.robotcontroller.askStatus()
+        self.updateStatus()
         return self.valves
     def getEM(self):
-        robotcontroller.askStatus()
+        self.robotcontroller.askStatus()
+        self.updateStatus()
         return self.em
 
     ##############################################################################
