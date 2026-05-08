@@ -3,21 +3,18 @@ from matplotlib.image import imread
 import matplotlib.pyplot as plt
 from CameraClient.RobotCamera import RobotCamera
 from RobotBrain.ETLController import ETLController
-from RobotBrain.AutoFocusController import AutoFocusController
 from ExperimentalSetup.Camera import Camera
 from ExperimentalSetup.Robot import Robot
 from ExperimentalSetup.Table import Table
-
 import numpy as np
 
 if __name__ == "__main__":
     
     parser = OptionParser(usage="%prog --help")
-    parser.add_option("-i", "--ip",              dest="ip",              type='string',  default='192.168.0.189', help="IP of the server.")
-    parser.add_option("-p", "--port",            dest="port",            type=int,       default=8080,             help="Port of the server.")
-    parser.add_option("-d", "--device",          dest="device",          type='string',  default='/dev/ttyUSB0',     help="Device name")
-    parser.add_option("-b", "--bauds",           dest="bauds",           type=int,       default=115200,             help="Bauds")
-    parser.add_option("-m", "--move-to-focus", dest="move_to_focus", action="store_true", default=True, help="Move robot to estimated focus at the end.")
+    parser.add_option("-i", "--ip", dest="ip", type="string", default="192.168.0.189", help="IP of the camera server.")
+    parser.add_option("-p", "--port", dest="port", type=int, default=8080, help="Port of the camera server.")
+    parser.add_option("-d", "--device", dest="device", type="string", default="/dev/ttyUSB0", help="Robot device name.")
+    parser.add_option("-b", "--bauds", dest="bauds", type=int, default=115200, help="Robot bauds.")
     (options, args) = parser.parse_args()
 
     ################Initilize 3D setup model
@@ -51,46 +48,48 @@ if __name__ == "__main__":
     # The 3D model of the robot
     robot3D = Robot(50.0, 30.0, 30.0, 40, table, camera, fig, ax1, ax2, ax3)
 
-    robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)
-    etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, False)
-
-    autofocus_velocity = 10.0
-    autofocus_range = 10
-
-    autofocus_controller = AutoFocusController(etlcontroller, robotCamera)
-
-    print("Autofocus range:", autofocus_range)
-    print("Autofocus velocity:", autofocus_velocity)
-    print("Move to focus:", options.move_to_focus)
-    # print("Robot initial velocity:", robot_controller.get_velocity())
-    print("Robot initial position XYZ:", etlcontroller.getPositionXYZ())
-    robotCamera.set_exposure(0.00025)
-    
     init_hole_pos = [-72.24, -368.34, 123.51, 140.58]
     step_x = 1.2
     step_y = 1.2
-    n_holes_x = 1
-    n_holes_y = 1
+    # Initialize Camera
+    robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)
+    
+    # Initialize Robot
+    etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, False)
+    etlcontroller.camera.set_exposure(0.00025)
+
+
+    # TODO - Define glue plate points position
+    init_pos = [-72.24, -368.34, 123.51, 140.58]
+    n_holes_x = 10
+    n_holes_y = 10
+    step_x = 1.2
+    step_y = 1.2
     for ix in range(n_holes_x):
         for iy in range(n_holes_y):
-            print(ix, iy)
-            x = init_hole_pos[0] + ix*step_x
-            y = init_hole_pos[1] + iy*step_y
-            etlcontroller.safeMovement(x, y, init_hole_pos[2], init_hole_pos[3])
-            focus_position = (ix, y, init_hole_pos[2], init_hole_pos[3])
+            x_hole = init_pos[0] + ix*step_x
+            y_hole = init_pos[1] + iy*step_y
 
+            etlcontroller.safeMovement(x_hole, y_hole, init_pos[2], init_pos[3])
+            summary, focus_z, fraction = etlcontroller.fullAutoFocus(140, is_double=True)   
+            etlcontroller.changeZ(focus_z)
+            # Take pic
+            etlcontroller.camera.changeFileName(f"GluePlate/DoubleFocus/picture_X{x_hole}Y{y_hole}Z{focus_z}RZ{init_pos[3]}.png")
+            etlcontrollet.camera.takePic()
+    # Second set of points
+    init_pos = [init_pos[0]+step_x*n_holes_x, init_pos[1]+step_y*n_holes_y, init_pos[2], init_pos[3]]
+    n_holes_x = 10
+    n_holes_y = 10
+    step_x = 1.2
+    step_y = 1.2
+    for ix in range(n_holes_x):
+        for iy in range(n_holes_y):
+            x_hole = init_pos[0] + ix*step_x
+            y_hole = init_pos[1] + iy*step_y
 
-            summary, focus_z, fraction = autofocus_controller.start_AutoFocus(
-                    focus_position,
-                    autofocus_range,
-                    autofocus_velocity,
-                    move_toFocus=options.move_to_focus,
-                    )
-            print("Autofocus summary:", summary)
-            print("Estimated focus fraction:", fraction)
-            print("Estimated focus z:", focus_z)
-            print("Robot final velocity:", etlcontroller.get_velocity())
-            xf, yf, zf, rzf = etlcontroller.getPositionXYZ()
-            robotCamera.changeFileName(f"GluePlate/picture_X{xf}Y{yf}Z{zf}RZ{rzf}.png")
-            robotCamera.takePic()
-    robot_controller.stop()
+            etlcontroller.safeMovement(x_hole, y_hole, init_pos[2], init_pos[3])
+            etlcontroller.fullAutoFocus(140, is_double=False)   
+            # Take pic
+            etlcontroller.camera.changeFileName(f"GluePlate/SingleFocus/picture_X{x_hole}Y{y_hole}Z{focus_z}RZ{init_pos[3]}.png")
+            etlcontroller.camera.takePic()
+    etlcontroller.exit()

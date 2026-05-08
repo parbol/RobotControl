@@ -17,7 +17,7 @@ import re
 class RobotController:
 
     ##############################################################################
-    def __init__(self, device, bauds, camera, robot3D, debug = False):
+    def __init__(self, device, bauds, robot3D, debug = False):
 
         #Technical stuff
         self.HEADER = '\033[95m'
@@ -33,9 +33,6 @@ class RobotController:
         self.device = device
         self.bauds = bauds
 
-        #Camera model XXX - Why do I need this?
-        # self.camera = camera
-        
         #Robot3D model
         self.robot3D = robot3D
 
@@ -111,7 +108,6 @@ class RobotController:
     ##############################################################################
     def exit(self):
         self.printLog('Closing connection')
-        self.camera.stop() 
         self.serial.close()
         sys.exit()
     ##############################################################################
@@ -167,7 +163,7 @@ class RobotController:
         VALVES return a binary number with 1 meanning open and 0 closed
         EM return 1 bit with 1 meanning on and 0 off
         """
-        print(f"Received message: {msg}")
+        self.printDebug(f"Received message: {msg}")
         pattern = r'POS:(.*?)ANGLE:(.*?)VALVES:(.*?)EM:(.*)'
         match = re.search(pattern, msg)
 
@@ -207,13 +203,13 @@ class RobotController:
         for i in range(len(msg), self.msg_length-5):
             msg += '_'
         msg += 5*'X'
-        print(msg)
+        self.printDebug(msg)
         self.serial.write(msg.encode())
         return True
     ##############################################################################
   
     ##############################################################################
-    def get_velocity(self):
+    def getVelocity(self):
         return self.velocity
 
     def changeVelocity(self, v):
