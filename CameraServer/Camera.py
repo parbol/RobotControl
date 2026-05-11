@@ -386,7 +386,7 @@ class Camera:
         
 
     def estimate_focusFraction(self, use_interpolation = True):
-        dead_time = 0.2
+        dead_time = 1.0
 
         sharp_vec = np.array(self.sharp_array) 
         time_vec = np.array(self.time_stamps)
