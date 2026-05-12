@@ -56,28 +56,29 @@ if __name__ == "__main__":
     
     # Initialize Robot
     etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, False)
-    etlcontroller.camera.set_exposure(0.00025)
-
-
+    # etlcontroller.camera.set_exposure(0.00025)
+    
     # TODO - Define glue plate points position
-    init_pos = [-72.24, -368.34, 123.51, 140.58]
-    n_holes_x = 10
-    n_holes_y = 10
-    step_x = 1.2
-    step_y = 1.2
+    init_pos = [-72.24, -368.34, 180, 140.58]
+    # etlcontroller.safeMovement(init_pos[0], init_pos[1], init_pos[2], init_pos[3])
+    # etlcontroller._singleAutoFocus(0, 1, True)
+    n_holes_x = 2
+    n_holes_y = 2
+    step_x = 12
+    step_y = 12
     for ix in range(n_holes_x):
         for iy in range(n_holes_y):
             x_hole = init_pos[0] + ix*step_x
-            y_hole = init_pos[1] + iy*step_y
+            y_hole = init_pos[1] - iy*step_y
 
             etlcontroller.safeMovement(x_hole, y_hole, init_pos[2], init_pos[3])
-            summary, focus_z, fraction = etlcontroller.fullAutoFocus(140, is_double=True)   
+            summary, focus_z, fraction = etlcontroller.fullAutoFocus(127, is_double=True)   
             etlcontroller.changeZ(focus_z)
             # Take pic
-            etlcontroller.camera.changeFileName(f"GluePlate/DoubleFocus/picture_X{x_hole}Y{y_hole}Z{focus_z}RZ{init_pos[3]}.png")
-            etlcontrollet.camera.takePic()
+            etlcontroller.camera.changeFileName(f"GluePlate/DoubleFocus/picture_X{x_hole:.3f}Y{y_hole:.3f}Z{focus_z:.5f}RZ{init_pos[3]:.3f}.png")
+            etlcontroller.camera.takePic()
     # Second set of points
-    init_pos = [init_pos[0]+step_x*n_holes_x, init_pos[1]+step_y*n_holes_y, init_pos[2], init_pos[3]]
+    init_pos = [init_pos[0]+step_x*n_holes_x, init_pos[1]-step_y*n_holes_y, init_pos[2], init_pos[3]]
     n_holes_x = 10
     n_holes_y = 10
     step_x = 1.2
@@ -85,7 +86,7 @@ if __name__ == "__main__":
     for ix in range(n_holes_x):
         for iy in range(n_holes_y):
             x_hole = init_pos[0] + ix*step_x
-            y_hole = init_pos[1] + iy*step_y
+            y_hole = init_pos[1] - iy*step_y
 
             etlcontroller.safeMovement(x_hole, y_hole, init_pos[2], init_pos[3])
             etlcontroller.fullAutoFocus(140, is_double=False)   

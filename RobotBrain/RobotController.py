@@ -269,9 +269,9 @@ class RobotController:
             rzs = '+' + rzs
         if self.velocity >= 0:
             vs = '+' + str(self.velocity)
-        if self.acecleration >= 0:
+        if self.aceleration >= 0:
             acs = '+' + str(self.aceleration)
-        if self.dececleration >= 0:
+        if self.deceleration >= 0:
             dcs = '+' + str(self.deceleration)
         
 

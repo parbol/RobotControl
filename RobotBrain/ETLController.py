@@ -242,6 +242,7 @@ class ETLController:
     ##############################################################################
     def changeZ(self, z):
         self.updateStatus()
+        self.printLog(f"Moving to z = {z}")
         # XXX - Define a range of safe z?
         self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], z, self.position_xyzrz[3])
         self.updateStatus()
@@ -328,13 +329,13 @@ class ETLController:
         self.changeZ(z_estimation)
         
         # General focus 
-        summary, focus_z, fraction = self._singleAutoFocus(z_range=20, z_speed=1, up_down=True)
+        summary, focus_z, fraction = self._singleAutoFocus(z_range=1, z_speed=0.01, up_down=True)
         if is_double:
             # Change Z to focus one
             self.changeZ(focus_z)
 
             # Second focus from bottom to top
-            summary, focus_z, fraction = self._singleAutoFocus(z_range=10, z_speed=0.1, up_down=False)
+            summary, focus_z, fraction = self._singleAutoFocus(z_range=0.2, z_speed=0.005, up_down=False)
             return summary, focus_z, fraction
         else:
             return summary, focus_z, fraction
@@ -397,8 +398,8 @@ class ETLController:
         # move to position but z = position("z")-z_range/2 and speed = z_speed
         stored_speed = self.getVelocity()
         self.setVelocity(z_speed)
-        store_aceleration = self.getAceleration()
-        self.setAceleration = 100
+        stored_aceleration = self.getAceleration()
+        self.setAceleration(100)
 
         summary = None
         try:
@@ -408,12 +409,14 @@ class ETLController:
             summary = self.camera.stop_autofocusAcquisition()
 
         fraction = self.camera.estimate_focusFraction()
-        print(fraction, type(fraction))
-        focus_z = start_z - fraction * z_range
-
+        if up_down:
+            focus_z = start_z - fraction * z_range
+        else:
+            focus_z = start_z + fraction * z_range
+        print(fraction, focus_z)
         # Go back to prev. speed and move to estimated focus
         self.setVelocity(stored_speed)
-        self.setAceleration(store_aceleration)
+        self.setAceleration(stored_aceleration)
         return summary, focus_z, fraction
     ##############################################################################
 
