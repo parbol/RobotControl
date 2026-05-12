@@ -328,13 +328,13 @@ class ETLController:
         self.changeZ(z_estimation)
         
         # General focus 
-        summary, focus_z, fraction = self._singleAutoFocus(z_range=10, z_speed=1, up_down=True)
+        summary, focus_z, fraction = self._singleAutoFocus(z_range=20, z_speed=1, up_down=True)
         if is_double:
             # Change Z to focus one
             self.changeZ(focus_z)
 
             # Second focus from bottom to top
-            summary, focus_z, fraction = self._singleAutoFocus(z_range=1, z_speed=0.1, up_down=False)
+            summary, focus_z, fraction = self._singleAutoFocus(z_range=10, z_speed=0.1, up_down=False)
             return summary, focus_z, fraction
         else:
             return summary, focus_z, fraction
@@ -397,6 +397,8 @@ class ETLController:
         # move to position but z = position("z")-z_range/2 and speed = z_speed
         stored_speed = self.getVelocity()
         self.setVelocity(z_speed)
+        store_aceleration = self.getAceleration()
+        self.setAceleration = 100
 
         summary = None
         try:
@@ -411,7 +413,7 @@ class ETLController:
 
         # Go back to prev. speed and move to estimated focus
         self.setVelocity(stored_speed)
-
+        self.setAceleration(store_aceleration)
         return summary, focus_z, fraction
     ##############################################################################
 
@@ -431,12 +433,22 @@ class ETLController:
 
     def setVelocity(self, v):
         if v >= 0 and v<=100:
-            self.robotcontroller.changeVelocity = v
+            self.robotcontroller.changeVelocity(v)
             return True
         else:
             self.printError(f"Velocity must be between 0 and 100, it is {v}")
+            # XXX - Close connection?
             return False
 
+    def setAceleration(self, a):
+        if a >= 0 and a<=100:
+            self.robotcontroller.changeAceleration(a)
+            self.robotcontroller.changeDeceleration(a)
+            return True
+        else:
+            self.printError(f"Aceleration must be between 0 and 100, it is {a}")
+            # XXX - Close connection?
+            return False
     ##############################################################################
     # Getters                                                                   ##
     ##############################################################################
@@ -459,6 +471,14 @@ class ETLController:
         return self.em
     def getVelocity(self):
         return self.robotcontroller.getVelocity()
+    def getAceleration(self):
+        ac = self.robotcontroller.getAceleration()
+        dc = self.robotcontroller.getDeceleration()
+        if ac == dc:
+            return ac
+        else:
+            self.printError("Aceleration and deceleration have different values")
+            return False
 
     ##############################################################################
 

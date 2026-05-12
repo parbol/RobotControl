@@ -52,6 +52,8 @@ class RobotController:
 
         # Set robot velocity as a percentage of the setted value in the GUI
         self.velocity = 100
+        self.aceleration = 30
+        self.deceleration = 30
         # Do the handshake
         if not self.handshake():
             print("Closing")
@@ -222,11 +224,36 @@ class RobotController:
     ##############################################################################
 
     ##############################################################################
+    def getAceleration(self):
+        return self.aceleration
+
+    def changeAceleration(self, a):
+        if a >= 0 and a<=100:
+            self.aceleration = a
+            return True
+        else:
+            self.printError(f"Aceleration must be between 0 and 100, it is {a}")
+            return False
+    ##############################################################################
+
+    ##############################################################################
+    def getDeceleration(self):
+        return self.deceleration
+    def changeDeceleration(self, a):
+        if a >= 0 and a<=100:
+            self.deceleration = a
+            return True
+        else:
+            self.printError(f"Deceleration must be between 0 and 100, it is {a}")
+            return False
+    ##############################################################################
+
+    ##############################################################################
     # Robot functions                                                           ##
     ##############################################################################
 
     ##############################################################################
-    def goTo(self, x, y, z, rz, orientation="s"):
+    def goTo(self, x, y, z, rz):
 
         xs = str(x)
         ys = str(y)
@@ -242,8 +269,13 @@ class RobotController:
             rzs = '+' + rzs
         if self.velocity >= 0:
             vs = '+' + str(self.velocity)
+        if self.acecleration >= 0:
+            acs = '+' + str(self.aceleration)
+        if self.dececleration >= 0:
+            dcs = '+' + str(self.deceleration)
+        
 
-        cadena = f'MOVE-TO:{xs}{ys}{zs}{rzs}{vs}{orientation}'
+        cadena = f'MOVE-TO:{xs}{ys}{zs}{rzs}{vs}{acs}{dcs}'
         
         self.sendMessage(cadena)
         data = self.getMessage()
@@ -259,33 +291,6 @@ class RobotController:
             self.exit()
             return False
     ##############################################################################
-
-
-    ##############################################################################
-    def goToVelAcDc(self, moves_params): # moves_params = [x, y, z, rz, vel, ac, dc]
-        # Total control de la velocidad aceleracion y deceleracion
-        moves_paramsStr = ["+"+str(i) if i>=0 else str(i) for i in moves_params]
-
-        cadena = 'MOVE-TO:'
-        for i in moves_paramsStr:
-            cadena += i
-        
-        self.sendMessage(cadena)
-        data = self.getMessage()
-        if not self.decodeMessage(data):
-            self.printError(f'There was a problem decoding the message from the Robot')
-            return False
-
-        # Check the robot is in the desire position
-        if (self.position_xyz[0] - x)**2 + (self.position_xyz[1] - y)**2 + (self.position_xyz[2] - z)**2 < 0.01**2: 
-            return True
-        else:
-            self.printError(f'Robot position ({self.position_xyz}) does not match the required position ({[x, y, z]})')
-            self.exit()
-            return False
-    ##############################################################################
-
-
 
     ##############################################################################
     def moveJ(self, j1, j2, j3, j4):
