@@ -392,6 +392,7 @@ class ETLController:
         self.changeZ(start_z)
 
         # init camera autofocus_acquisition
+        self.printLog("Starting autofocus")
         if not self.camera.start_autofocusAcquisition():
             raise RuntimeError("Could not start autofocus acquisition")
 
