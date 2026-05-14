@@ -329,7 +329,8 @@ class ETLController:
         self.changeZ(z_estimation)
         
         # General focus 
-        summary, focus_z, fraction = self._singleAutoFocus(z_range=1, z_speed=0.01, up_down=True)
+        summary, focus_z, fraction = self._singleAutoFocus(z_range=1, z_speed=0.03, up_down=True)
+        # summary, focus_z, fraction = self._singleAutoFocus(z_range=0.2, z_speed=0.001, up_down=True)
         if is_double:
             # Change Z to focus one
             self.changeZ(focus_z)

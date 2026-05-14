@@ -60,37 +60,63 @@ if __name__ == "__main__":
     
     # TODO - Define glue plate points position
     init_pos = [-72.24, -368.34, 180, 140.58]
+    # # Do 10 photos in the same pos
     # etlcontroller.safeMovement(init_pos[0], init_pos[1], init_pos[2], init_pos[3])
-    # etlcontroller._singleAutoFocus(0, 1, True)
+    # summary, focus_z, fraction = etlcontroller.fullAutoFocus(127, is_double=True)   
+    # for i in range(10):
+    #     etlcontroller.changeZ(180)
+    #     etlcontroller.changeZ(focus_z)
+    #     position_xyzrz = etlcontroller.getPositionXYZ()
+    #     position_j1j2j3j4 = etlcontroller.getPositionJ1J2J3()
+    #     x, y, z, rz = position_xyzrz
+    #     j1, j2, j3, j4 = position_j1j2j3j4
+    #     etlcontroller.camera.changeFileName(f"GluePlate/RepetitivityTest/picture_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}_iter{i}.png")
+    #     etlcontroller.camera.takePic()
+    # Check dead time --> z_range = 0
+    # summary, focus_z, fraction = etlcontroller.fullAutoFocus(127, is_double=False)   
+
     n_holes_x = 10
     n_holes_y = 10
     step_x = 12
     step_y = 12
-    for ix in range(2, n_holes_x):
-        for iy in range(n_holes_y):
-            x_hole = init_pos[0] + ix*step_x
-            y_hole = init_pos[1] - iy*step_y
+    
+    # etlcontroller.safeMovement(init_pos[0], init_pos[1], init_pos[2], init_pos[3])
+    # etlcontroller.safeMovement(init_pos[0]+22*step_x, init_pos[1], init_pos[2], init_pos[3])
+    # for ix in range(5, n_holes_x):
+    #     for iy in range(n_holes_y):
+    #         x_hole = init_pos[0] + ix*step_x
+    #         y_hole = init_pos[1] - iy*step_y
 
-            etlcontroller.safeMovement(x_hole, y_hole, init_pos[2], init_pos[3])
-            summary, focus_z, fraction = etlcontroller.fullAutoFocus(127, is_double=True)   
-            etlcontroller.changeZ(focus_z)
-            # Take pic
-            etlcontroller.camera.changeFileName(f"GluePlate/DoubleFocus/picture_X{x_hole:.3f}Y{y_hole:.3f}Z{focus_z:.5f}RZ{init_pos[3]:.3f}.png")
-            etlcontroller.camera.takePic()
+    #         etlcontroller.safeMovement(x_hole, y_hole, init_pos[2], init_pos[3])
+    #         summary, focus_z, fraction = etlcontroller.fullAutoFocus(127, is_double=True)   
+    #         etlcontroller.changeZ(focus_z)
+    #         # Take pic
+    #         position_xyzrz = etlcontroller.getPositionXYZ()
+    #         position_j1j2j3j4 = etlcontroller.getPositionJ1J2J3()
+    #         x, y, z, rz = position_xyzrz
+    #         j1, j2, j3, j4 = position_j1j2j3j4
+    #         etlcontroller.camera.changeFileName(f"GluePlate/DoubleFocus/picture_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png")
+    #         etlcontroller.camera.takePic()
     # Second set of points
     init_pos = [init_pos[0]+step_x*n_holes_x, init_pos[1]-step_y*n_holes_y, init_pos[2], init_pos[3]]
     n_holes_x = 10
     n_holes_y = 10
     step_x = 12
     step_y = 12
-    for ix in range(n_holes_x):
+    for ix in range(0, n_holes_x):
         for iy in range(n_holes_y):
             x_hole = init_pos[0] + ix*step_x
             y_hole = init_pos[1] - iy*step_y
 
             etlcontroller.safeMovement(x_hole, y_hole, init_pos[2], init_pos[3])
-            etlcontroller.fullAutoFocus(127, is_double=False)   
+            summary, focus_z, fraction = etlcontroller.fullAutoFocus(127, is_double=False)   
+            etlcontroller.changeZ(focus_z)
             # Take pic
-            etlcontroller.camera.changeFileName(f"GluePlate/SingleFocus/picture_X{x_hole}Y{y_hole}Z{focus_z}RZ{init_pos[3]}.png")
+            position_xyzrz = etlcontroller.getPositionXYZ()
+            position_j1j2j3j4 = etlcontroller.getPositionJ1J2J3()
+            x, y, z, rz = position_xyzrz
+            j1, j2, j3, j4 = position_j1j2j3j4
+            etlcontroller.camera.changeFileName(f"GluePlate/SingleFocus/picture_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png")
             etlcontroller.camera.takePic()
+
     etlcontroller.exit()
