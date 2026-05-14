@@ -400,8 +400,8 @@ class ETLController:
         # move to position but z = position("z")-z_range/2 and speed = z_speed
         stored_speed = self.getVelocity()
         self.setVelocity(z_speed)
-        stored_aceleration = self.getAceleration()
-        self.setAceleration(100)
+        stored_acceleration = self.getAcceleration()
+        self.setAcceleration(100)
 
         summary = None
         try:
@@ -415,10 +415,10 @@ class ETLController:
             focus_z = start_z - fraction * z_range
         else:
             focus_z = start_z + fraction * z_range
-        print(fraction, focus_z)
+        self.printDebug(f"Autofocus fraction = {fraction}, focus_z = {focus_z}")
         # Go back to prev. speed and move to estimated focus
         self.setVelocity(stored_speed)
-        self.setAceleration(stored_aceleration)
+        self.setAcceleration(stored_acceleration)
         return summary, focus_z, fraction
     ##############################################################################
 
@@ -445,13 +445,13 @@ class ETLController:
             # XXX - Close connection?
             return False
 
-    def setAceleration(self, a):
+    def setAcceleration(self, a):
         if a >= 0 and a<=100:
-            self.robotcontroller.changeAceleration(a)
+            self.robotcontroller.changeAcceleration(a)
             self.robotcontroller.changeDeceleration(a)
             return True
         else:
-            self.printError(f"Aceleration must be between 0 and 100, it is {a}")
+            self.printError(f"Acceleration must be between 0 and 100, it is {a}")
             # XXX - Close connection?
             return False
     ##############################################################################
@@ -476,13 +476,13 @@ class ETLController:
         return self.em
     def getVelocity(self):
         return self.robotcontroller.getVelocity()
-    def getAceleration(self):
-        ac = self.robotcontroller.getAceleration()
+    def getAcceleration(self):
+        ac = self.robotcontroller.getAcceleration()
         dc = self.robotcontroller.getDeceleration()
         if ac == dc:
             return ac
         else:
-            self.printError("Aceleration and deceleration have different values")
+            self.printError("Acceleration and deceleration have different values")
             return False
 
     ##############################################################################

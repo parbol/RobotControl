@@ -52,7 +52,7 @@ class RobotController:
 
         # Set robot velocity as a percentage of the setted value in the GUI
         self.velocity = 100
-        self.aceleration = 30
+        self.acceleration = 30
         self.deceleration = 30
         # Do the handshake
         if not self.handshake():
@@ -225,11 +225,11 @@ class RobotController:
 
     ##############################################################################
     def getAceleration(self):
-        return self.aceleration
+        return self.acceleration
 
     def changeAceleration(self, a):
         if a >= 0 and a<=100:
-            self.aceleration = a
+            self.acceleration = a
             return True
         else:
             self.printError(f"Aceleration must be between 0 and 100, it is {a}")
@@ -269,8 +269,8 @@ class RobotController:
             rzs = '+' + rzs
         if self.velocity >= 0:
             vs = '+' + str(self.velocity)
-        if self.aceleration >= 0:
-            acs = '+' + str(self.aceleration)
+        if self.acceleration >= 0:
+            acs = '+' + str(self.acceleration)
         if self.deceleration >= 0:
             dcs = '+' + str(self.deceleration)
         

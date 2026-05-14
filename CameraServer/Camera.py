@@ -10,9 +10,6 @@ import ids_peak.ids_peak as ids_peak
 import ids_peak_ipl.ids_peak_ipl as ids_ipl
 import ids_peak.ids_peak_ipl_extension as ids_ipl_extension
 
-#from ids_peak import ids_peak
-#from ids_peak_ipl import ids_peak_ipl
-#from ids_peak import ids_ipl_extension
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.interpolate import CubicSpline
@@ -122,8 +119,8 @@ class Camera:
         try: 
             self.exposure_time_seg = exposure_time_seg
             exposure_time_microseg = exposure_time_seg * 1e6
-            self.remote_device_nodemap.FindNode("ExposureTime").SetValue(exposure_time_microseg) # in microseconds  # in microseconds
-
+            # in microseconds 
+            self.remote_device_nodemap.FindNode("ExposureTime").SetValue(exposure_time_microseg)
             return self
         except Exception as e:
             print('No device is free and available. ERR:' + str(e))
@@ -159,14 +156,13 @@ class Camera:
 
             print(f"Binning applied: {bx}x{by}")
             return True
-
         except Exception as e:
             print(f"Could not set binning. ERR: {e}")
             return False
         
     def change_binningRuntime(self, bx, by):
         success = True
-        # 1. parar adquisición
+        # 1. Stop acquisition
         try:
             self.datastream.StopAcquisition()
             self.remote_device_nodemap.FindNode("AcquisitionStop").Execute()
@@ -175,10 +171,10 @@ class Camera:
             print("Could not stop acquisition:", e)
             success = False
 
-        # 2. cambiar binning
+        # 2. Change binning
         success = self.set_binning(bx, by) and success
 
-        # 3. volver a arrancar
+        # 3. Start acquisition again
         try:
             self.datastream.StartAcquisition()
             self.remote_device_nodemap.FindNode("AcquisitionStart").Execute()
@@ -320,8 +316,9 @@ class Camera:
         # Toma imagen, genera objeto Imagen, la binariza y extrae el centro del fiducial.
         print('ToDo')
 
-    #################################################################################################################
+    ############################################################ 
     #### AUTOFOCUS FUNCTION BLOCK
+    ############################################################ 
 
     def sharpness_tenengrad(self, img):
         gx = cv2.Sobel(img, cv2.CV_64F, 1, 0)
@@ -365,7 +362,6 @@ class Camera:
     def _autofocusAcquisitionLoop(self, max_photos, time_photo):
         self.runAutofocus = True
         index_loop = 0
-
 
         while self.runAutofocus and index_loop < max_photos:
             index_loop += 1
@@ -414,7 +410,6 @@ class Camera:
         if max_arg == 0 or max_arg == (sharp_vec_ROI.shape[0] - 1):
             raise RuntimeError("Focus maximum found at the border of the autofocus range")
 
-
         # If pass error block -> Interpolate
 
         if use_interpolation:
@@ -423,11 +418,5 @@ class Camera:
             sharp_interp = spline(time_interp)
             max_arg_interp = np.argmax(sharp_interp)
             return (time_interp[max_arg_interp] - time_vec_ROI[0]) / (time_vec_ROI[-1] - time_vec_ROI[0])
-
         else:
             return max_arg / (sharp_vec_ROI.shape[0] - 1)
-
-    
-            
-        
-        
