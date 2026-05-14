@@ -324,32 +324,6 @@ class ETLController:
     ##############################################################################
     
     ##############################################################################
-    def produceCalibrationPoints(self):
-
-        firstPointX = -132.0
-        firstPointY = -222.0
-
-        #This has to be adjusted by hand
-        offsetCameraX = 20 
-        offsetCameraY = 20
-
-        stepx = 12
-        stepy = 12
-
-        nX = 22
-        nY = 30
-
-        points = [] 
-        for ix in range(nX):
-            for iy in range(nY):
-                points.append([firstPointX + stepx*ix, firstPointY - stepy *iy])
-
-        return points
-    ##############################################################################
-
-    ##############################################################################
-
-    ##############################################################################
     def fullAutoFocus(self, z_estimation, is_double=True):
         self.updateStatus()
         self.changeZ(z_estimation)

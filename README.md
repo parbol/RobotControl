@@ -1,30 +1,44 @@
 # RobotControl
 
 This package controls the assembly workflows of the CMS ETL modules at IFCA.
+It provides tools for:
 
-The package has several logic units dedicated to different parts of the assembly:
+* Robot motion control
+* Camera acquisition and image processing
+* Coordinate transformations
+* Automated assembly workflows
+* ETL-specific robotic operations
 
-## CameraServer
+
+## Project Structure
+
+### CameraServer
 
 This package takes care of taking pictures from the camera and sending them to the Robot camera client.
 
-This has to run in the raspberry pi
+This has to run in the Raspberry Pi connected to the camera.
 
-## CameraClient
+### CameraClient
 
-This package takes care of communicating with the camera server in the raspberry pi and processing the images
+This package takes care of communicating with the camera server in the Raspberry Pi and processing the images.
 
-## RobotBrain
+### RobotBrain
 
-This package communicates with the CS9 and sends commands to move, open/close vacuum lines, etc.
+This is dicided into two control layers:
+* RobotController: This is the basic control layer, where the comunication with the robot is implemented. It has basic functions to move the robot, open/close vacuum lines, etc.
 
-Also, the ETLController is implemented where specific ETL functions and movements are defined
+* ETLController: This is the high level control layer, where specific ETL functions and movements are defined. It uses the RobotController to send the commands to the robot, but it has more complex functions like `safeMovement` or `fullAutoFocus` that are needed for the ETL assembly.
 
-## ExperimentalSetup
+### ExperimentalSetup
 
-This package contains a model of the table, robot and physical camera. It basically takes care of translating between camera coordinates and 3D coordinates.
+This package contains a model of the:
+* Table
+* Robot
+* physical camera. 
 
-## runWorkflows
+It basically takes care of translating between camera coordinates and 3D coordinates.
+
+### runWorkflows
 
 This should have the executables implementing the calibration and assembly workflows.
 
@@ -63,3 +77,90 @@ Also, it has defined a safe movement (`safeMovement`), checking in which part of
 2) Using the tablet, go to ETL and start connection.
 - Now, the handshake should be done
 3) Send the wanted messages/Run the wanted program
+
+
+## Functionalities
+
+### `ETLController`
+
+The main ETL-specific functionalities are implemented in `ETLController.py`.
+
+---
+
+### Movement (`safeMovement`)
+
+A controlled movement algorithm is implemented to avoid collisions during robot motion.
+
+#### Algorithm
+
+1. Move the robot to a predefined safe `Z` position (`180 mm`).
+2. Determine:
+   - The current ETL plate
+   - The destination ETL plate
+
+3. If the robot is moving between different plates, the movement follows:
+
+```text
+Current Position
+    → Current Plate Safe Position
+    → Destination Plate Safe Position
+    → Final Position
+```
+- The movement between safe positions is performed using angular movements:
+  1. First without changing `RZ`
+  2. Then adjusting `RZ` at the destination safe position
+
+4. If the robot remains on the same plate, it moves directly to the final position.
+
+5. Final positioning is performed in the following order:
+   1. Move in `(X, Y)`
+   2. Rotate `RZ`
+   3. Move in `Z`
+
+---
+
+### Rotate RZ (`rotateRZ`)
+
+A controlled `RZ` rotation algorithm is implemented to avoid entanglement of:
+
+- Raspberry Pi cabling
+- LED light cables
+
+#### Algorithm
+
+1. If the current `RZ` angle is negative:
+   - Move first to `RZ = 0°` or `RZ = 180°`
+   - Select whichever is closer
+
+2. If the target `RZ` angle is negative:
+   - Again pass through `RZ = 0°` or `RZ = 180°`
+
+3. Move to the final `RZ` position.
+
+---
+
+### Autofocus Algorithm (`fullAutoFocus`)
+
+This algorithm automatically finds the optimal `Z` position for image acquisition.
+
+#### Algorithm
+
+1. Assuming the robot is placed at the desired:
+   - `X`
+   - `Y`
+   - `RZ`
+
+2. Move the robot to an estimated `Z` position. It has to be close enough to the optimal focus.
+
+3. Compute the focus scan range limits.
+
+4. Move continuously through the range while:
+   - Capturing images
+   - Computing image sharpness using the **Tenengrad variance**
+   - Storing:
+     - The time when the picture was taken
+     - The image sharpness value
+
+5. Once the scan is complete:
+   - Determine the time corresponding to the maximum sharpness interpolating between the captured data points.
+   - Compute the optimal focus `Z` assuming uniform robot velocity during the scan.
