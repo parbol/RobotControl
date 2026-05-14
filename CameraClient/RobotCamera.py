@@ -46,6 +46,93 @@ class RobotCamera:
     ##############################################################################
 
     ##############################################################################
+    def set_exposure(self, exposure_time_seg):
+        self.sendMessage(f'SET EXPOSURE {exposure_time_seg}')
+        data = self.getMessage()
+        if data == 'OK':
+            return True
+        self.printError(data)
+        return False
+    ##############################################################################
+
+    ##############################################################################
+    def change_binningRuntime(self, bx, by):
+        self.sendMessage(f'CHANGE BINNING {bx} {by}')
+        data = self.getMessage()
+        if data == 'OK':
+            return True
+        self.printError(data)
+        return False
+    ##############################################################################
+
+    ##############################################################################
+    def auto_exposureSaturation(self, saturated_fractionGoal=0.05, fraction_tolerance=0.01, single_channel=False):
+        single_channel_value = 1 if single_channel else 0
+        self.sendMessage(f'AUTO EXPOSURE SATURATION {saturated_fractionGoal} {fraction_tolerance} {single_channel_value}')
+        data = self.getMessage()
+        words = data.split()
+        if len(words) == 5 and words[0] == 'OK' and words[1] == 'EXPOSURE' and words[3] == 'SATURATION':
+            return float(words[2]), float(words[4])
+        self.printError(data)
+        return None
+    ##############################################################################
+
+    ##############################################################################
+    def start_autofocusAcquisition(self, max_photos=100, time_photo=0.2):
+        self.sendMessage(f'START AUTOFOCUS ACQUISITION {max_photos} {time_photo}')
+        data = self.getMessage()
+        if data == 'OK':
+            return True
+        self.printError(data)
+        return False
+    ##############################################################################
+
+    ##############################################################################
+    def stop_autofocusAcquisition(self):
+        self.sendMessage('STOP AUTOFOCUS ACQUISITION')
+        data = self.getMessage()
+        words = data.split()
+        if len(words) == 5 and words[0] == 'OK' and words[1] == 'N' and words[3] == 'LIMIT':
+            return {
+                'n': int(words[2]),
+                'reached_max_photos': bool(int(words[4])),
+                'best_index': None,
+                'best_sharpness': None,
+                'best_time': None,
+            }
+        if (
+            len(words) == 11
+            and words[0] == 'OK'
+            and words[1] == 'N'
+            and words[3] == 'LIMIT'
+            and words[5] == 'BEST_INDEX'
+            and words[7] == 'BEST_SHARPNESS'
+            and words[9] == 'BEST_TIME'
+        ):
+            return {
+                'n': int(words[2]),
+                'reached_max_photos': bool(int(words[4])),
+                'best_index': int(words[6]),
+                'best_sharpness': float(words[8]),
+                'best_time': float(words[10]),
+            }
+        self.printError(data)
+        return None
+    ##############################################################################
+
+    ##############################################################################
+    def estimate_focusFraction(self, use_interpolation=True):
+        use_interpolation_value = 1 if use_interpolation else 0
+        self.sendMessage(f'ESTIMATE FOCUS FRACTION {use_interpolation_value}')
+        data = self.getMessage()
+        words = data.split()
+        if len(words) == 3 and words[0] == 'OK' and words[1] == 'FRACTION':
+            return float(words[2])
+        self.printError(data)
+        return None
+    ##############################################################################
+
+    ##############################################################################
     def stop(self):
         self.sendMessage('STOP')
         self.exit()

@@ -160,9 +160,147 @@ class CameraServer:
         elif data == 'TAKE PICTURE': 
             self.printLog('Client says: ' + data)
             return self.handlePicture()
+        elif data.startswith('SET EXPOSURE'):
+            self.printLog('Client says: ' + data)
+            return self.handle_setExposure(data)
+        elif data.startswith('CHANGE BINNING'):
+            self.printLog('Client says: ' + data)
+            return self.handle_changeBinningRuntime(data)
+        elif data.startswith('AUTO EXPOSURE SATURATION'):
+            self.printLog('Client says: ' + data)
+            return self.handle_autoExposureSaturation(data)
+        elif data.startswith('START AUTOFOCUS ACQUISITION'):
+            self.printLog('Client says: ' + data)
+            return self.handle_startAutofocusAcquisition(data)
+        elif data.startswith('STOP AUTOFOCUS ACQUISITION'):
+            self.printLog('Client says: ' + data)
+            return self.handle_stopAutofocusAcquisition(data)
+        elif data.startswith('ESTIMATE FOCUS FRACTION'):
+            self.printLog('Client says: ' + data)
+            return self.handle_estimateFocusFraction(data)
         else:
             self.printError("Unexpected command received")
             return False
+        return True
+    ##############################################################################
+
+    ##############################################################################
+    def handle_setExposure(self, data):
+        words = data.split()
+        if len(words) != 3:
+            self.sendMessage('ERROR: SET EXPOSURE requires one value')
+            return True
+        try:
+            exposure_time_seg = float(words[2])
+            self.camera.set_exposure(exposure_time_seg)
+        except Exception as e:
+            self.sendMessage('ERROR: ' + str(e))
+            return True
+        self.sendMessage('OK')
+        return True
+    ##############################################################################
+
+    ##############################################################################
+    def handle_changeBinningRuntime(self, data):
+        words = data.split()
+        if len(words) != 4:
+            self.sendMessage('ERROR: CHANGE BINNING requires bx and by')
+            return True
+        try:
+            bx = int(words[2])
+            by = int(words[3])
+            if not self.camera.change_binningRuntime(bx, by):
+                self.sendMessage('ERROR: binning was not applied')
+                return True
+        except Exception as e:
+            self.sendMessage('ERROR: ' + str(e))
+            return True
+        self.sendMessage('OK')
+        return True
+    ##############################################################################
+
+    ##############################################################################
+    def handle_autoExposureSaturation(self, data):
+        words = data.split()
+        if len(words) != 6:
+            self.sendMessage('ERROR: AUTO EXPOSURE SATURATION requires goal tolerance single_channel')
+            return True
+        try:
+            saturated_fractionGoal = float(words[3])
+            fraction_tolerance = float(words[4])
+            single_channel = bool(int(words[5]))
+            result = self.camera.auto_exposureSaturation(
+                saturated_fractionGoal,
+                fraction_tolerance,
+                single_channel,
+            )
+            if result is None:
+                self.sendMessage('ERROR: auto exposure saturation failed')
+                return True
+            exposure_time_seg, saturated_fraction = result
+        except Exception as e:
+            self.sendMessage('ERROR: ' + str(e))
+            return True
+        self.sendMessage(f'OK EXPOSURE {exposure_time_seg} SATURATION {saturated_fraction}')
+        return True
+    ##############################################################################
+
+    ##############################################################################
+    def handle_startAutofocusAcquisition(self, data):
+        words = data.split()
+        if len(words) != 5:
+            self.sendMessage('ERROR: START AUTOFOCUS ACQUISITION requires max_photos dead_time')
+            return True
+        try:
+            max_photos = int(words[3])
+            dead_time = float(words[4])
+            if not self.camera.start_autofocusAcquisition(max_photos, dead_time):
+                self.sendMessage('ERROR: autofocus acquisition already running')
+                return True
+        except Exception as e:
+            self.sendMessage('ERROR: ' + str(e))
+            return True
+        self.sendMessage('OK')
+        return True
+    ##############################################################################
+
+    ##############################################################################
+    def handle_stopAutofocusAcquisition(self, data):
+        words = data.split()
+        if len(words) != 3:
+            self.sendMessage('ERROR: STOP AUTOFOCUS ACQUISITION does not take arguments')
+            return True
+        try:
+            sharp_array, time_stamps, reached_max_photos = self.camera.stop_autofocusAcquisition()
+            n_points = len(sharp_array)
+            reached_max_photos_value = 1 if reached_max_photos else 0
+            if n_points == 0:
+                self.sendMessage(f'OK N 0 LIMIT {reached_max_photos_value}')
+                return True
+            best_index = max(range(n_points), key=lambda i: sharp_array[i])
+            self.sendMessage(
+                f'OK N {n_points} LIMIT {reached_max_photos_value} BEST_INDEX {best_index} '
+                f'BEST_SHARPNESS {sharp_array[best_index]} BEST_TIME {time_stamps[best_index]}'
+            )
+        except Exception as e:
+            self.sendMessage('ERROR: ' + str(e))
+            return True
+        return True
+    ##############################################################################
+
+    ##############################################################################
+    def handle_estimateFocusFraction(self, data):
+        words = data.split()
+        if len(words) != 4:
+            self.sendMessage('ERROR: ESTIMATE FOCUS FRACTION requires use_interpolation')
+            return True
+        try:
+            use_interpolation = bool(int(words[3]))
+            fraction = self.camera.estimate_focusFraction(use_interpolation=use_interpolation)
+        except Exception as e:
+            self.sendMessage('ERROR: ' + str(e))
+            return True
+        self.sendMessage(f'OK FRACTION {fraction}')
         return True
     ##############################################################################
 
@@ -208,4 +346,3 @@ class CameraServer:
         self.connection.sendall(l)
         f.close()
     ##############################################################################
-

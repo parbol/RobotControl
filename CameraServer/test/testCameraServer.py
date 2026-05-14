@@ -14,8 +14,11 @@ if __name__ == "__main__":
 
     camera = Camera('picture.png')
     camera.start_acquisition().set_exposure(1/250)
-    
+
+    #camera.change_binning_runtime(2,2)
+
     server = CameraServer(options.ip, options.port, camera)
+    
     
     camera.close_device()
 

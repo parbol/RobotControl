@@ -30,8 +30,10 @@ class ETLController:
         self.debug = debug
         
         # Information for the client
-        self.robotcontroller = RobotController(device, bauds, camera, robot3D, debug)
+        self.robotcontroller = RobotController(device, bauds, robot3D, debug)
 
+        # Camera
+        self.camera = camera
         # Show off
         self.showBanner()
         time.sleep(1)
@@ -140,9 +142,9 @@ class ETLController:
         self.updateStatus()
         # XXX - Check colision with the robot as a minimum radio or something similar?
         # Check if changing plate
-        print("Compute current plate")
+        self.printDebug("Compute current plate")
         current_plate = self.distanceToPlate(self.position_xyzrz)
-        print("Compute final plate")
+        self.printDebug("Compute final plate")
         target_plate = self.distanceToPlate([x, y, z, rz])
 
         if current_plate != target_plate:
@@ -162,14 +164,17 @@ class ETLController:
             self.rotateRZ(self.safe_rz)
         self.updateStatus()
 
+        self.printLog(f"Moving to final position, (X,Y) = ({x}, {y})")
         self.robotcontroller.goTo(x, y, self.safe_z, self.position_xyzrz[3])
         self.updateStatus()
 
         # Rotate head
+        self.printLog(f"Moving to final position, RZ = {rz}")
         self.rotateRZ(rz)
         self.updateStatus()
 
         # Move to desired pos 
+        self.printLog(f"Moving to final position, Z = {z}")
         self.changeZ(z)
         self.updateStatus()
         return True
@@ -184,10 +189,13 @@ class ETLController:
         self.printLog(f"Moving from plate {closest_plate} to {final_plate}")
         
         # Rotate rz to this plate pos
+        self.printLog(f"Preparing RZ to match the plate safe position")
         self.rotateRZ(self.plate_position_xyzrz[closest_plate][3])
         self.updateStatus()
         
         # Move angular to safe position of this plate
+        self.printLog(f"Moving angular to plate safe position")
+        self.rotateRZ(self.plate_position_xyzrz[closest_plate][3])
         self.robotcontroller.moveJ(
                 self.plate_position_j1j2j3j4[closest_plate][0], 
                 self.plate_position_j1j2j3j4[closest_plate][1], 
@@ -197,6 +205,7 @@ class ETLController:
         self.updateStatus()
         
         # Move to final plate without changing rZ
+        self.printLog(f"Moving angular to final plate safe position")
         self.robotcontroller.moveJ(
                 self.plate_position_j1j2j3j4[final_plate][0], 
                 self.plate_position_j1j2j3j4[final_plate][1], 
@@ -206,6 +215,7 @@ class ETLController:
         self.updateStatus()
         
         # Change rZ 
+        self.printLog(f"RZ is safe final plate position")
         self.rotateRZ(self.plate_position_xyzrz[final_plate][3])
         self.updateStatus()
         
@@ -219,15 +229,14 @@ class ETLController:
         Computes the closest plate to a given position and returns the closest plane
         """
         distance2 = {}
-        print(f"Position = {position}")
+        self.printDebug(f"Position = {position}")
         for key, item in self.plate_position_xyzrz.items():
-            print(key)
-            print(self.plate_position_xyzrz[key][0], self.plate_position_xyzrz[key][1])
+            self.printDebug(key)
+            self.printDebug(f"{self.plate_position_xyzrz[key][0]}, {self.plate_position_xyzrz[key][1]}")
             distance2[key] = (position[0] - self.plate_position_xyzrz[key][0])**2 + (position[1] - self.plate_position_xyzrz[key][1])**2
-        print(distance2)
+        self.printDebug(distance2)
         closest = min(distance2, key=distance2.get)
-        print(closest)
-        input("Is ok?")
+        self.printDebug(closest)
         return closest
         
     ##############################################################################
@@ -235,6 +244,7 @@ class ETLController:
     ##############################################################################
     def changeZ(self, z):
         self.updateStatus()
+        self.printLog(f"Moving to z = {z}")
         # XXX - Define a range of safe z?
         self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], z, self.position_xyzrz[3])
         self.updateStatus()
@@ -252,24 +262,21 @@ class ETLController:
                         0
         """
         self.updateStatus()
-        self.printLog(f"Moving rZ")
+        self.printLog(f"Moving rZ from {self.position_xyzrz[3]} to {rz}")
         if self.position_xyzrz[3] < 0:
-            self.printLog(f"Initial rZ is negative")
             # Move to +180 or 0, the closest one then move to the final position
             safe_rz = 0 if abs(self.position_xyzrz[3] - 0) <= abs(self.position_xyzrz[3]+180) else 180
-            self.printLog(f"Going to {safe_rz}")
+            self.printLog(f"Initial rZ is negative --> going to {safe_rz}")
             self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], safe_rz)
             self.updateStatus()
         if rz < 0:
-            self.printLog(f"Final rZ is negative")
             # Move to 0 or +180, the closest one, then to the final one
             safe_rz = 0 if abs(rz - 0) <= abs(rz+180) else 180
-            self.printLog(f"Going to {safe_rz}")
+            self.printLog(f"Final rZ is negative --> going to {safe_rz}")
             self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], safe_rz)
             self.updateStatus()
 
         # Final movement
-        self.printLog(f"Final rZ movement")
         self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], rz)
         self.updateStatus()
         return True
@@ -340,6 +347,107 @@ class ETLController:
         return points
     ##############################################################################
 
+    ##############################################################################
+
+    ##############################################################################
+    def fullAutoFocus(self, z_estimation, is_double=True):
+        self.updateStatus()
+        self.changeZ(z_estimation)
+        
+        # General focus 
+        summary, focus_z, fraction = self._singleAutoFocus(z_range=1, z_speed=0.03, up_down=True)
+        # summary, focus_z, fraction = self._singleAutoFocus(z_range=0.2, z_speed=0.001, up_down=True)
+        if is_double:
+            # Change Z to focus one
+            self.changeZ(focus_z)
+
+            # Second focus from bottom to top
+            summary, focus_z, fraction = self._singleAutoFocus(z_range=0.2, z_speed=0.005, up_down=False)
+            return summary, focus_z, fraction
+        else:
+            return summary, focus_z, fraction
+    ##############################################################################
+
+    ##############################################################################
+    def _singleAutoFocus(self, z_range, z_speed, up_down=True):
+        """
+        Perform a fast autofocus scan along the Z axis and estimate the best focus position.
+
+        The autofocus procedure moves the robot from the upper bound of the scan range
+        to the lower bound while the camera continuously acquires autofocus data.
+        
+        Parameters
+        ----------
+        z_range : float
+            Total Z distance covered during the autofocus scan. The scan starts at ``z + z_range / 2`` and ends at
+            ``z - z_range / 2``.
+        z_speed : float
+            Z-axis velocity used during the autofocus scan.
+        up_down : bool, optional
+            If ``True``, the autofocus is performed from top to bottom. 
+            If `False``bottom to top. Default is ``True``.
+
+        Returns
+        -------
+        summary : object
+            Summary information returned by
+            ``camera.stop_autofocusAcquisition()``.
+
+        focus_z : float
+            Estimated Z position corresponding to the best focus.
+    
+        fraction : float
+            Relative focus position within the scan range, typically between 0 and 1.
+
+        Notes
+        -----
+        - Assumes that the current XY and rotational positions are already correct.
+        - The robot velocity is restored to its original value after the scan,
+          even if an exception occurs during motion.
+        """
+        # XXX - Assuming XY and RZ positions are ok
+        # move to position but z = position("z")+z_range/2 (start position of autofocus)
+        self.updateStatus()
+        z = self.position_xyzrz[2]
+        if up_down:
+            start_z = z + z_range / 2
+            end_z   = z - z_range / 2
+        else:
+            start_z = z - z_range / 2
+            end_z   = z + z_range / 2
+
+        self.changeZ(start_z)
+
+        # init camera autofocus_acquisition
+        self.printLog("Starting autofocus")
+        if not self.camera.start_autofocusAcquisition():
+            raise RuntimeError("Could not start autofocus acquisition")
+
+        # move to position but z = position("z")-z_range/2 and speed = z_speed
+        stored_speed = self.getVelocity()
+        self.setVelocity(z_speed)
+        stored_acceleration = self.getAcceleration()
+        self.setAcceleration(100)
+
+        summary = None
+        try:
+            self.changeZ(end_z)
+        # stop autofocus_acquisition and get summary
+        finally:
+            summary = self.camera.stop_autofocusAcquisition()
+
+        fraction = self.camera.estimate_focusFraction()
+        if up_down:
+            focus_z = start_z - fraction * z_range
+        else:
+            focus_z = start_z + fraction * z_range
+        self.printDebug(f"Autofocus fraction = {fraction}, focus_z = {focus_z}")
+        # Go back to prev. speed and move to estimated focus
+        self.setVelocity(stored_speed)
+        self.setAcceleration(stored_acceleration)
+        return summary, focus_z, fraction
+    ##############################################################################
+
     # ##############################################################################
     # def wait_user(self):
     # Needed?
@@ -349,28 +457,65 @@ class ETLController:
     # def wait_time(self, seconds: int):
     # Needed?
     ##############################################################################
+    
+    ##############################################################################
+    # Setters                                                                   ##
+    ##############################################################################
 
+    def setVelocity(self, v):
+        if v >= 0 and v<=100:
+            self.robotcontroller.changeVelocity(v)
+            return True
+        else:
+            self.printError(f"Velocity must be between 0 and 100, it is {v}")
+            # XXX - Close connection?
+            return False
+
+    def setAcceleration(self, a):
+        if a >= 0 and a<=100:
+            self.robotcontroller.changeAcceleration(a)
+            self.robotcontroller.changeDeceleration(a)
+            return True
+        else:
+            self.printError(f"Acceleration must be between 0 and 100, it is {a}")
+            # XXX - Close connection?
+            return False
     ##############################################################################
     # Getters                                                                   ##
     ##############################################################################
 
     def getPositionXYZ(self):
-        robotcontroller.askStatus()
-        return self.position_xyz
+        self.robotcontroller.askStatus()
+        self.updateStatus()
+        return self.position_xyzrz
     def getPositionJ1J2J3(self):
-        robotcontroller.askStatus()
-        return self.position_j1j2j3
+        self.robotcontroller.askStatus()
+        self.updateStatus()
+        return self.position_j1j2j3j4
     def getValveStatus(self):
-        robotcontroller.askStatus()
+        self.robotcontroller.askStatus()
+        self.updateStatus()
         return self.valves
     def getEM(self):
-        robotcontroller.askStatus()
+        self.robotcontroller.askStatus()
+        self.updateStatus()
         return self.em
+    def getVelocity(self):
+        return self.robotcontroller.getVelocity()
+    def getAcceleration(self):
+        ac = self.robotcontroller.getAcceleration()
+        dc = self.robotcontroller.getDeceleration()
+        if ac == dc:
+            return ac
+        else:
+            self.printError("Acceleration and deceleration have different values")
+            return False
 
     ##############################################################################
 
     ##############################################################################
     def exit(self):
+        self.camera.stop()
         self.robotcontroller.stop()
     ##############################################################################
 

@@ -17,7 +17,7 @@ import re
 class RobotController:
 
     ##############################################################################
-    def __init__(self, device, bauds, camera, robot3D, debug = False):
+    def __init__(self, device, bauds, robot3D, debug = False):
 
         #Technical stuff
         self.HEADER = '\033[95m'
@@ -33,9 +33,6 @@ class RobotController:
         self.device = device
         self.bauds = bauds
 
-        #Camera model XXX - Why do I need this?
-        # self.camera = camera
-        
         #Robot3D model
         self.robot3D = robot3D
 
@@ -55,6 +52,8 @@ class RobotController:
 
         # Set robot velocity as a percentage of the setted value in the GUI
         self.velocity = 100
+        self.acceleration = 30
+        self.deceleration = 30
         # Do the handshake
         if not self.handshake():
             print("Closing")
@@ -111,7 +110,6 @@ class RobotController:
     ##############################################################################
     def exit(self):
         self.printLog('Closing connection')
-        self.camera.stop() 
         self.serial.close()
         sys.exit()
     ##############################################################################
@@ -167,7 +165,7 @@ class RobotController:
         VALVES return a binary number with 1 meanning open and 0 closed
         EM return 1 bit with 1 meanning on and 0 off
         """
-        print(f"Received message: {msg}")
+        self.printDebug(f"Received message: {msg}")
         pattern = r'POS:(.*?)ANGLE:(.*?)VALVES:(.*?)EM:(.*)'
         match = re.search(pattern, msg)
 
@@ -207,12 +205,15 @@ class RobotController:
         for i in range(len(msg), self.msg_length-5):
             msg += '_'
         msg += 5*'X'
-        print(msg)
+        self.printDebug(msg)
         self.serial.write(msg.encode())
         return True
     ##############################################################################
   
     ##############################################################################
+    def getVelocity(self):
+        return self.velocity
+
     def changeVelocity(self, v):
         if v >= 0 and v<=100:
             self.velocity = v
@@ -223,11 +224,36 @@ class RobotController:
     ##############################################################################
 
     ##############################################################################
+    def getAceleration(self):
+        return self.acceleration
+
+    def changeAceleration(self, a):
+        if a >= 0 and a<=100:
+            self.acceleration = a
+            return True
+        else:
+            self.printError(f"Aceleration must be between 0 and 100, it is {a}")
+            return False
+    ##############################################################################
+
+    ##############################################################################
+    def getDeceleration(self):
+        return self.deceleration
+    def changeDeceleration(self, a):
+        if a >= 0 and a<=100:
+            self.deceleration = a
+            return True
+        else:
+            self.printError(f"Deceleration must be between 0 and 100, it is {a}")
+            return False
+    ##############################################################################
+
+    ##############################################################################
     # Robot functions                                                           ##
     ##############################################################################
 
     ##############################################################################
-    def goTo(self, x, y, z, rz, orientation="s"):
+    def goTo(self, x, y, z, rz):
 
         xs = str(x)
         ys = str(y)
@@ -243,8 +269,13 @@ class RobotController:
             rzs = '+' + rzs
         if self.velocity >= 0:
             vs = '+' + str(self.velocity)
+        if self.acceleration >= 0:
+            acs = '+' + str(self.acceleration)
+        if self.deceleration >= 0:
+            dcs = '+' + str(self.deceleration)
+        
 
-        cadena = f'MOVE-TO:{xs}{ys}{zs}{rzs}{vs}{orientation}'
+        cadena = f'MOVE-TO:{xs}{ys}{zs}{rzs}{vs}{acs}{dcs}'
         
         self.sendMessage(cadena)
         data = self.getMessage()
@@ -256,9 +287,14 @@ class RobotController:
         if (self.position_xyz[0] - x)**2 + (self.position_xyz[1] - y)**2 + (self.position_xyz[2] - z)**2 < 0.01**2: 
             return True
         else:
-            self.printError(f'Robot position ({self.position_xyz}) does not match the required position ({[x, y, z]})')
-            self.exit()
-            return False
+            print(f"Error position is not matching pos = {self.position_xyz}")
+            self.askStatus()
+            if (self.position_xyz[0] - x)**2 + (self.position_xyz[1] - y)**2 + (self.position_xyz[2] - z)**2 < 0.01**2: 
+                return True
+            else:
+                self.printError(f'Robot position ({self.position_xyz}) does not match the required position ({[x, y, z]})')
+                self.exit()
+                return False
     ##############################################################################
 
     ##############################################################################
@@ -291,8 +327,13 @@ class RobotController:
         if (self.position_j1j2j3[0] - j1)**2 + (self.position_j1j2j3[1] - j2)**2 + (self.position_j1j2j3[2] - j3)**2 < 0.01**2: 
             return True
         else:
-            self.printError(f'Robot position ({self.position_j1j2j3}) does not match the required position ({[j1, j2, j3]})')
-            return False
+            print(f"Error position is not matching pos = {self.position_j1j2j3}")
+            self.askStatus()
+            if (self.position_j1j2j3[0] - j1)**2 + (self.position_j1j2j3[1] - j2)**2 + (self.position_j1j2j3[2] - j3)**2 < 0.01**2: 
+                return True
+            else:
+                self.printError(f'Robot position ({self.position_j1j2j3}) does not match the required position ({[j1, j2, j3]})')
+                return False
     ##############################################################################
 
     ##############################################################################
