@@ -33,6 +33,10 @@ class CameraServer:
         self.robot_IP = robot_IP
         self.robot_PORT = robot_PORT
 
+        # Error handling for message requests
+        self.last_message = ""
+        self.is_msgProcessed = False
+
         #Picture name
         self.pictureName = camera.filename
 
@@ -112,7 +116,11 @@ class CameraServer:
             counter = counter + len(msg)
             if counter == 512:
                 break
-        return text[0:text.find('XXXXX')]
+
+        self.last_message = text[0:text.find('XXXXX')]
+        self.is_msgProcessed = False
+        
+        return self.last_message
     ##############################################################################
 
     ##############################################################################
@@ -274,13 +282,15 @@ class CameraServer:
             sharp_array, time_stamps, reached_max_photos = self.camera.stop_autofocusAcquisition()
             n_points = len(sharp_array)
             reached_max_photos_value = 1 if reached_max_photos else 0
+            autofocus_compromised_value = 1 if self.camera.autofocus_compromised else 0
             if n_points == 0:
-                self.sendMessage(f'OK N 0 LIMIT {reached_max_photos_value}')
+                self.sendMessage(f'OK N 0 LIMIT {reached_max_photos_value} COMPROMISED {autofocus_compromised_value}')
                 return True
             best_index = max(range(n_points), key=lambda i: sharp_array[i])
             self.sendMessage(
                 f'OK N {n_points} LIMIT {reached_max_photos_value} BEST_INDEX {best_index} '
-                f'BEST_SHARPNESS {sharp_array[best_index]} BEST_TIME {time_stamps[best_index]}'
+                f'BEST_SHARPNESS {sharp_array[best_index]} BEST_TIME {time_stamps[best_index]} '
+                f'COMPROMISED {autofocus_compromised_value}'
             )
         except Exception as e:
             self.sendMessage('ERROR: ' + str(e))

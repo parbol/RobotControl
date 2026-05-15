@@ -92,22 +92,30 @@ class RobotCamera:
         self.sendMessage('STOP AUTOFOCUS ACQUISITION')
         data = self.getMessage()
         words = data.split()
-        if len(words) == 5 and words[0] == 'OK' and words[1] == 'N' and words[3] == 'LIMIT':
+        if (
+            len(words) == 7
+            and words[0] == 'OK'
+            and words[1] == 'N'
+            and words[3] == 'LIMIT'
+            and words[5] == 'COMPROMISED'
+        ):
             return {
                 'n': int(words[2]),
                 'reached_max_photos': bool(int(words[4])),
                 'best_index': None,
                 'best_sharpness': None,
                 'best_time': None,
+                'compromised': bool(int(words[6])),
             }
         if (
-            len(words) == 11
+            len(words) == 13
             and words[0] == 'OK'
             and words[1] == 'N'
             and words[3] == 'LIMIT'
             and words[5] == 'BEST_INDEX'
             and words[7] == 'BEST_SHARPNESS'
             and words[9] == 'BEST_TIME'
+            and words[11] == 'COMPROMISED'
         ):
             return {
                 'n': int(words[2]),
@@ -115,6 +123,7 @@ class RobotCamera:
                 'best_index': int(words[6]),
                 'best_sharpness': float(words[8]),
                 'best_time': float(words[10]),
+                'compromised': bool(int(words[12])),
             }
         self.printError(data)
         return None

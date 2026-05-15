@@ -18,6 +18,33 @@ from PIL import Image
 import cv2
 import time
 import threading
+from functools import wraps
+
+# Error restart decorator
+def retry_with_restart(return_on_fail=None):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            self.set_errorTries(0)
+            while self.get_errorTries() <= self.error_triesLimit:
+                try:
+                    result = func(self, *args, **kwargs)
+                    self.set_errorTries(0)
+                    return result
+                except Exception as e:
+                    print(f'{func.__name__} failed. ERR: {e}')
+                    if self.get_errorTries() < self.error_triesLimit:
+                        if not self.restart_byError(self.error_triesLimit + 1):
+                            break
+                    else:
+                        self.close_device()
+                        break
+
+            if return_on_fail is not None:
+                return return_on_fail
+            raise RuntimeError(f"{func.__name__} failed after max retries")
+        return wrapper
+    return decorator
 
 class Camera:
     """
@@ -33,12 +60,18 @@ class Camera:
         self.remote_device_nodemap = None
         self.datastream = None
         self.exposure_time_seg = 1/250
+        self.current_binning = [1,1]
         
         self.search_device()
         self.name = self.device_descriptor.DisplayName()
         self.open_device()
 
         self.image = None
+
+        # Error handling
+        self.error_tries = 0 
+        self.error_triesLimit = 1
+        self.autofocus_compromised = False
 
         # Autofocus parameters
         self.runAutofocus = False
@@ -47,8 +80,9 @@ class Camera:
         self.time_stamps = []
         self.autofocusReachedMaxPhotos = False
 
-        
-
+    ############################################################ 
+    #### DEVICE OP FUNCTION BLOCK
+    ############################################################ 
     def search_device(self):
         """
         Searches for devices compatible with IDS industrial cameras
@@ -90,7 +124,6 @@ class Camera:
             print('No device is free and available. ERR:' + str(e))
             ids_peak.Library.Close()
 
-
     def start_acquisition(self):
         """
         Starts acquisition time, during this time Images can be taken
@@ -106,63 +139,100 @@ class Camera:
             self.remote_device_nodemap.FindNode("AcquisitionStart").Execute()
             self.remote_device_nodemap.FindNode("AcquisitionStart").WaitUntilDone()
 
+            self.set_exposure(self.exposure_time_seg)
+            bx, by = self.current_binning
+            if bx != 1 or by != 1:
+                if not self.change_binningRuntime(bx, by):
+                    raise RuntimeError(f"Could not restore binning {bx}x{by}")
+
             return self
         except Exception as e:
             print('No device is free and available. ERR:' + str(e))
             ids_peak.Library.Close()
+            return None
+        
+    def close_device(self):
+        """
+        Closes the libraries, seting free the device in use. 
+        """
+        ids_peak.Library.Close()
 
+    def restart_adquisition(self):
+        print("Restarting adquisition")
+        try:
+            self.close_device()
+            self.search_device()
+            self.name = self.device_descriptor.DisplayName()
+            self.open_device()
+            if self.start_acquisition() is None:
+                print("Restarting adquisition -> start_acquisition failed")
+                return False
+            print("Restarting adquisition -> OK")
+            return True
+        except Exception as e:
+            print('Could not restart adquisition. ERR:' + str(e))
+            return False
+        
+    ############################################################ 
+    #### OP ERROR HANDLING FUNCTION BLOCK
+    ############################################################         
+    def restart_byError(self, number_ofTries = 1):
+        if self.error_tries < number_ofTries:
+            print("Requested restart by error")
+            self.error_tries += 1
+            # Compromised funtions
+            if self.runAutofocus == True:
+                self.autofocus_compromised = True
+            #
+            return self.restart_adquisition()
+        return False
 
-    def set_exposure(self, exposure_time_seg = 1/250):
+    def set_errorTries(self, value):
+        self.error_tries = value
+        return value
+
+    def get_errorTries(self):
+        return self.error_tries
+
+    ############################################################ 
+    #### CAMERA UTILS FUNCTION BLOCK
+    ############################################################ 
+
+    @retry_with_restart()
+    def set_exposure(self, exposure_time_seg=1/250):
         """
         Sets exposure time for the capture
         """
-        try: 
-            self.exposure_time_seg = exposure_time_seg
-            exposure_time_microseg = exposure_time_seg * 1e6
-            # in microseconds 
-            self.remote_device_nodemap.FindNode("ExposureTime").SetValue(exposure_time_microseg)
-            return self
-        except Exception as e:
-            print('No device is free and available. ERR:' + str(e))
-            ids_peak.Library.Close()
-
+        self.exposure_time_seg = exposure_time_seg
+        exposure_time_microseg = exposure_time_seg * 1e6
+        self.remote_device_nodemap.FindNode("ExposureTime").SetValue(exposure_time_microseg)
+        return self
 
     ### Let's try to change binning directly from software
+    @retry_with_restart(return_on_fail=False)
     def set_binning(self, bx=2, by=2):
         nm = self.remote_device_nodemap
+        sel = nm.FindNode("BinningSelector")
+        sel.SetCurrentEntry("Region0")
+        print("BinningSelector = Region0")
 
-        try:
-            sel = nm.FindNode("BinningSelector")
-            sel.SetCurrentEntry("Region0")
-            print("BinningSelector = Region0")
-        except Exception as e:
-            print("Could not set BinningSelector:", e)
+        nm.FindNode("OffsetX").SetValue(0)
+        nm.FindNode("OffsetY").SetValue(0)
+        print("Offsets reset to 0")
 
-        try:
-            nm.FindNode("OffsetX").SetValue(0)
-            nm.FindNode("OffsetY").SetValue(0)
-            print("Offsets reset to 0")
-        except Exception as e:
-            print("Could not reset offsets:", e)
+        h = nm.FindNode("BinningHorizontal")
+        v = nm.FindNode("BinningVertical")
+        print("Current binning:", h.Value(), v.Value())
 
-        try:
-            h = nm.FindNode("BinningHorizontal")
-            v = nm.FindNode("BinningVertical")
+        h.SetValue(bx)
+        v.SetValue(by)
 
-            print("Current binning:", h.Value(), v.Value())
-
-            h.SetValue(bx)
-            v.SetValue(by)
-
-            print(f"Binning applied: {bx}x{by}")
-            return True
-        except Exception as e:
-            print(f"Could not set binning. ERR: {e}")
-            return False
+        print(f"Binning applied: {bx}x{by}")
+        self.current_binning = [bx, by]
+        return True
         
     def change_binningRuntime(self, bx, by):
         success = True
-        # 1. Stop acquisition
         try:
             self.datastream.StopAcquisition()
             self.remote_device_nodemap.FindNode("AcquisitionStop").Execute()
@@ -171,10 +241,8 @@ class Camera:
             print("Could not stop acquisition:", e)
             success = False
 
-        # 2. Change binning
         success = self.set_binning(bx, by) and success
 
-        # 3. Start acquisition again
         try:
             self.datastream.StartAcquisition()
             self.remote_device_nodemap.FindNode("AcquisitionStart").Execute()
@@ -184,35 +252,23 @@ class Camera:
             success = False
 
         return success
-
-    def change_binning_runtime(self, bx, by):
-        return self.change_binningRuntime(bx, by)
-        
+         
+    @retry_with_restart()
     def get_image(self):
         """
         Triggers the camera and gets a picture of type Image
         """
-        try:
-            # trigger image
-            self.remote_device_nodemap.FindNode("TriggerSoftware").Execute()
-            buffer = self.datastream.WaitForFinishedBuffer(1000)
+        self.remote_device_nodemap.FindNode("TriggerSoftware").Execute()
+        buffer = self.datastream.WaitForFinishedBuffer(1000)
 
-            # convert to RGB
-            raw_image = ids_ipl_extension.BufferToImage(buffer)
-            # for Peak version 2.0.1 and lower, use this function instead of the previous line:
-            #raw_image = ids_ipl.Image_CreateFromSizeAndBuffer(buffer.PixelFormat(), buffer.BasePtr(), buffer.Size(), buffer.Width(), buffer.Height())
-            color_image = raw_image.ConvertTo(ids_ipl.PixelFormatName_RGB8)
-            self.datastream.QueueBuffer(buffer)
-            self.image = Image.fromarray(color_image.get_numpy_3D())
-        except Exception as e:
-            print('No device is free and available. ERR:' + str(e))
-            ids_peak.Library.Close()
+        raw_image = ids_ipl_extension.BufferToImage(buffer)
+        color_image = raw_image.ConvertTo(ids_ipl.PixelFormatName_RGB8)
+        self.datastream.QueueBuffer(buffer)
+        self.image = Image.fromarray(color_image.get_numpy_3D())
+        return self.image
 
-    def close_device(self):
-        """
-        Closes the libraries, seting free the device in use. 
-        """
-        ids_peak.Library.Close()
+
+
 
     def auto_exposure_get_image(self, gray_pallete = 50):
         """
@@ -334,7 +390,8 @@ class Camera:
     def start_autofocusAcquisition(self, max_photos = 100, time_photo = 0.1):
         if self.autofocus_thread is not None and self.autofocus_thread.is_alive():
             return False
-
+        
+        self.autofocus_compromised = False
         self.runAutofocus = True
         self.sharp_array = []
         self.time_stamps = []

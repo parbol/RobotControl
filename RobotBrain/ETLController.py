@@ -329,7 +329,11 @@ class ETLController:
         self.changeZ(z_estimation)
         
         # General focus 
+
         summary, focus_z, fraction = self._singleAutoFocus(z_range=1, z_speed=0.03, up_down=True)
+        if summary.get("compromised", True):
+            summary, focus_z, fraction = self._singleAutoFocus(z_range=1, z_speed=0.03, up_down=True)
+
         # summary, focus_z, fraction = self._singleAutoFocus(z_range=0.2, z_speed=0.001, up_down=True)
         if is_double:
             # Change Z to focus one
@@ -337,6 +341,9 @@ class ETLController:
 
             # Second focus from bottom to top
             summary, focus_z, fraction = self._singleAutoFocus(z_range=0.2, z_speed=0.005, up_down=False)
+            if summary.get("compromised", True):
+                summary, focus_z, fraction = self._singleAutoFocus(z_range=0.2, z_speed=0.005, up_down=False)
+
             return summary, focus_z, fraction
         else:
             return summary, focus_z, fraction
@@ -409,6 +416,10 @@ class ETLController:
         # stop autofocus_acquisition and get summary
         finally:
             summary = self.camera.stop_autofocusAcquisition()
+        if summary is None:
+            raise RuntimeError("Autofocus acquisition summary is empty")
+        if summary.get("compromised", False):
+            raise RuntimeError("Autofocus acquisition was compromised by camera restart")
 
         fraction = self.camera.estimate_focusFraction()
         if up_down:
