@@ -224,10 +224,10 @@ class RobotController:
     ##############################################################################
 
     ##############################################################################
-    def getAceleration(self):
+    def getAcceleration(self):
         return self.acceleration
 
-    def changeAceleration(self, a):
+    def changeAcceleration(self, a):
         if a >= 0 and a<=100:
             self.acceleration = a
             return True

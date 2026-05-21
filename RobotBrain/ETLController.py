@@ -62,8 +62,6 @@ class ETLController:
                                      4: [-332, 174, self.safe_z, -161]
                                      }
        
-        self.calibrationPoints = self.produceCalibrationPoints()
-
         # Limits to avoid collision
         # Define one region for picker tool and assembly, another region for Tamale plate
         self.x_limit = -230
