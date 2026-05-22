@@ -1,30 +1,30 @@
 import numpy as np
 from ExperimentalSetup.EulerRotation import EulerRotation
 
+
 class Camera:
 
-    def __init__(self, x, y, z, psi, theta, phi, cx, cy, focaldistance, sigmaCamera):
+    def __init__(self, x, y, z, psi, theta, phi, cx, cy, focaldistance, focusdistance):
 
+        #This is the position of the camera with respect to the system of arm2
         self.r0 = np.asarray([x, y, z])
         self.rotation0 = EulerRotation(psi, theta, phi)
-        self.sigmaCamera = sigmaCamera
+        self.npixelx = 2064
+        self.npixely = 1544
+        self.psi = psi
+        self.theta = theta
+        self.phi = phi
         self.cx = cx
         self.cy = cy
-        self.focaldistance = focaldistance
-        self.r0global = np.asarray([0.0, 0.0, 0.0])
-        self.uxglobal = np.asarray([1.0, 0.0, 0.0])
-        self.uyglobal = np.asarray([0.0, 1.0, 0.0])
-        self.uzglobal = np.asarray([0.0, 0.0, 1.0])
+        self.focaldistance = focaldistance 
+        self.focusdistance = focusdistance
+        # r0 global, uxglobal, uyglobal, uz global ?
+        self.r = np.asarray([0, 0, 0])
+        self.ux = np.asarray([1.0, 0.0, 0.0])
+        self.uy = np.asarray([0.0, 1.0, 0.0])
+        self.uz = np.asarray([0.0, 0.0, 1.0])
+      
 
+    def update(self):
 
-    def setCameraGlobalInformation(self, r0global, uxglobal, uyglobal, uzglobal):
-        
-        self.r0global = r0global
-        self.uxglobal = uxglobal
-        self.uyglobal = uyglobal
-        self.uzglobal = uzglobal
-
-
-
-
-       
+        self.rotation0 = EulerRotation(self.psi, self.theta, self.phi)
