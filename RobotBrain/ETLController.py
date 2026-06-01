@@ -18,7 +18,7 @@ from RobotBrain.RobotController import RobotController
 class ETLController:
 
     ##############################################################################
-    def __init__(self, device, bauds, camera, robot3D, debug = False):
+    def __init__(self, device, bauds, camera, robot3D, debug=False):
 
         self.HEADER = '\033[95m'
         self.OKBLUE = '\033[94m'
@@ -30,10 +30,13 @@ class ETLController:
         self.debug = debug
         
         # Information for the client
-        self.robotcontroller = RobotController(device, bauds, robot3D, debug)
+        self.robotcontroller = RobotController(device, bauds, debug)
 
         # Camera
         self.camera = camera
+        # Robot model
+        self.robot = robot3D
+
         # Show off
         self.showBanner()
         time.sleep(1)
@@ -135,6 +138,12 @@ class ETLController:
 
     ##############################################################################
     def safeMovement(self, x, y, z, rz):
+        """
+        If rz = None it does not change
+        """
+        self.updateStatus()
+        if rz == None:
+            rz = self.position_xyzrz[3]
         self.printLog(f"Moving to {[x, y, z, rz]}")
         # Go up to safe z
         self.updateStatus()

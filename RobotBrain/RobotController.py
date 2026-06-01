@@ -17,7 +17,7 @@ import re
 class RobotController:
 
     ##############################################################################
-    def __init__(self, device, bauds, robot3D, debug = False):
+    def __init__(self, device, bauds, debug = False):
 
         #Technical stuff
         self.HEADER = '\033[95m'
@@ -32,9 +32,6 @@ class RobotController:
         #Information for the client
         self.device = device
         self.bauds = bauds
-
-        #Robot3D model
-        self.robot3D = robot3D
 
         #Show off
         self.showBanner()
