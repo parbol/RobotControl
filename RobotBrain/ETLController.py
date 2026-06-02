@@ -18,7 +18,7 @@ from RobotBrain.RobotController import RobotController
 class ETLController:
 
     ##############################################################################
-    def __init__(self, device, bauds, camera, robot3D, debug = False):
+    def __init__(self, device, bauds, camera, robot3D, debug=False):
 
         self.HEADER = '\033[95m'
         self.OKBLUE = '\033[94m'
@@ -30,10 +30,13 @@ class ETLController:
         self.debug = debug
         
         # Information for the client
-        self.robotcontroller = RobotController(device, bauds, robot3D, debug)
+        self.robotcontroller = RobotController(device, bauds, debug)
 
         # Camera
         self.camera = camera
+        # Robot model
+        self.robot = robot3D
+
         # Show off
         self.showBanner()
         time.sleep(1)
@@ -65,6 +68,16 @@ class ETLController:
         # Limits to avoid collision
         # Define one region for picker tool and assembly, another region for Tamale plate
         self.x_limit = -230
+
+        # Valves mapping
+        # TODO -- Check because 2 is 0 and so on but 1 is 1
+        self.valve_map = {}
+        for i_module in range(1,5):
+            for i, etroc in enumerate(["A", "B", "C", "D"]):
+                self.valve_map[f"ETROC_{i_module}{etroc}"] = [15 * (i_module-1) + i]
+        self.valve_map["PCB"] = [29]
+        self.valve_map["COVER"] = [30]
+        self.valve_map["TOOL"] = [31, 32]
 
         # Initialise arm in ETL mode, ETL is left handed, IT is right handed
         self.checkArmPlacement()
@@ -133,6 +146,12 @@ class ETLController:
 
     ##############################################################################
     def safeMovement(self, x, y, z, rz):
+        """
+        If rz = None it does not change
+        """
+        self.updateStatus()
+        if rz == None:
+            rz = self.position_xyzrz[3]
         self.printLog(f"Moving to {[x, y, z, rz]}")
         # Go up to safe z
         self.updateStatus()
@@ -282,12 +301,25 @@ class ETLController:
     ##############################################################################
 
     ##############################################################################
+    def stepRZ(self, step_rz):
+        if abs(step_rz) > 20:
+            self.printError("The step rotation is too big check piece placements again IDIOT")
+        self.updateStatus()
+        final_rz = self.position_xyzrz[3] + step_rz
+        self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], final_rz)
+        self.updateStatus()
+        return True
+
+    ##############################################################################
+
+    ##############################################################################
     def grabPickerTool(self):
         self.safeMovement(self.picker_tool[0], self.picker_tool[1], self.picker_tool[2], self.picker_tool[3])
         self.robotcontroller.setEM(1)
         self.updateStatus()
         self.changeZ(self.safe_z)
         return True
+
     ##############################################################################
 
     ##############################################################################
@@ -299,11 +331,36 @@ class ETLController:
 
     ##############################################################################
 
+
     ##############################################################################
-    def grabAssemblyPart(self, x, y, z, rz):
-        self.safeMovement(x, y, z, rz)
-        self.robotcontroller.setValves('0'*18+'1'*2)
-        time.sleep(2)
+    def grabAssemblyPart(self, x, y, z, part_rotation_rz, part_name):
+        self.updateStatus()
+        if part_name.startswith("PCB"):
+            safe_pos = self.plate_position_xyzrz[1]
+        elif part_name.startswith("ETROC"):
+            safe_pos = self.plate_position_xyzrz[2]
+        elif part_name.startswith("COVER"):
+            safe_pos = self.plate_position_xyzrz[3]
+        else:
+            self.printWarning("I do not know which plate I am loooking for")
+            safe_pos = self.position_xyzrz
+        # Move X-Y to part position and rz safe pos
+        self.safeMovement(x, y, safe_pos[2], safe_pos[3])
+        self.updateStatus()
+        # Step in RZ to correct rotation
+        self.stepRZ(part_rotation_rz)
+        self.updateStatus()
+
+        self.changeZ(z)
+        # Open Tool valves
+        self.printLog("Openning tool valves")
+        valves = self.nameToValves("Tool", True)
+        self.robotcontroller.setValves(valves)
+        time.sleep(1)
+        self.printLog(f"Clossing {part_name} valves")
+        valves = self.nameToValves(part_name, False)
+        self.robotcontroller.setValves(valves)
+
         self.updateStatus()
         self.changeZ(self.safe_z)
         return True
@@ -311,13 +368,42 @@ class ETLController:
     ##############################################################################
 
     ##############################################################################
-    def releaseAssemblyPart(self, x, y, z, rz):
-        self.safeMovement(x, y, z, rz)
-        self.robotcontroller.setValves('0'*20) # XXX - are this the right valves?
-        time.sleep(2)
+    def releaseAssemblyPart(self, x, y, z, part_rotation_rz, part_name):
+        self.updateStatus()
+        if part_name.startswith("PCB"):
+            safe_pos = self.plate_position_xyzrz[1]
+        elif part_name.startswith("ETROC"):
+            safe_pos = self.plate_position_xyzrz[2]
+        elif part_name.startswith("COVER"):
+            safe_pos = self.plate_position_xyzrz[3]
+        else:
+            self.printWarning("I do not know which plate I am loooking for")
+            safe_pos = self.position_xyzrz
+        # Move X-Y to part position and rz safe pos
+        self.safeMovement(x, y, safe_pos[2], safe_pos[3])
+        self.updateStatus()
+        # Step in RZ to correct rotation
+        self.stepRZ(part_rotation_rz)
+        self.updateStatus()
+        # Close Tool valves
+        self.printLog("Closing tool valves")
+        valves = self.nameToValves("Tool", False)
+        self.robotcontroller.setValves(valves)
+        time.sleep(1)
+        # Move up
         self.updateStatus()
         self.changeZ(self.safe_z)
         return True
+
+    ##############################################################################
+
+    ##############################################################################
+    def nameToValves(self, name: str, to_open: bool):
+        self.updateStatus()
+        valves = self.valves.copy() # Keep current status
+        for valve in self.valve_map[name]:
+            valves[valve] = 1 if to_open else 0
+        return valves
 
     ##############################################################################
     
