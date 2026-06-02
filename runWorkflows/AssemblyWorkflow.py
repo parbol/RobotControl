@@ -32,6 +32,9 @@ import ImageAnalysis.ProcessFiducialPoint as ProcessFiducialPoint
 
 ## Constants
 SAFE_Z = 180
+Z_ETROCS = 136 # TODO - Check
+Z_PCB = 150 # TODO - Check
+Z_COVER = 140 # TODO - Check
 
 def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller):
     """
@@ -238,9 +241,15 @@ if __name__ == "__main__":
     # TODO
     for i_module in modules_to_perform_assembly:
         for i_etroc in ["A", "B", "C", "D"]:
-            # Pick ETROC and correct rotation angle
+            # Pick ETROC, assume orientation is ok (apart from correction)
             etroc_pos = assembly_parts_position[f"ETROC_{i_module}{i_etroc}"]
-            etlcontroller.safeMovement(etroc_pos[0], etroc_pos[1], SAFE_Z, etroc_pos[2], None)
+            etlcontroller.grabAssemblyPart(etroc_pos[0], etroc_pos[1], Z_ETROCS, etroc_pos[2], f"ETROC_{i_module}{i_etroc}")
+            # Release ETROC in PCB, 1.- Move to position and apply correction angle 2.- Release
+            release_pos = assembly_parts_position[f"PCB_{i_module}{i_etroc}"]
+            etlcontroller.releaseAssemblyPart(release_pos[0], release_pos[1], Z_PCB, release_pos[2], f"PCB_{i_module}{i_etroc}")
+    
+    # Now 4 ETROCs are in each PCB
+    # Put the cover plate on top but I do not have any fiducial mark
 
     # Close connection
     etlcontroller.exit()
