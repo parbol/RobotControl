@@ -72,9 +72,9 @@ class ETLController:
         # Valves mapping
         base_map = {
             "A": 15,
-            "B": 14,
+            "B": 16,
             "C": 17,
-            "D": 16,
+            "D": 18,
         }
 
         self.valve_map = {}
