@@ -48,9 +48,9 @@ if __name__ == "__main__":
     # The 3D model of the robot
     robot3D = Robot(50.0, 30.0, 30.0, 40, table, camera, fig, ax1, ax2, ax3)
 
-    init_hole_pos = [-72.24, -368.34, 123.51, 140.58]
-    step_x = 1.2
-    step_y = 1.2
+    # init_hole_pos = [176.73, -468.21, 180, 28.06]
+    # step_x = 1.2
+    # step_y = 1.2
     # Initialize Camera
     robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)
     
@@ -59,8 +59,8 @@ if __name__ == "__main__":
     # etlcontroller.camera.set_exposure(0.00025)
     
     # TODO - Define glue plate points position
-    init_pos = [-72.24, -368.34, 180, 140.58]
-    # # Do 10 photos in the same pos
+    # init_pos = [176.73, -485.67, 180, 28.08]
+     # Do 10 photos in the same pos
     # etlcontroller.safeMovement(init_pos[0], init_pos[1], init_pos[2], init_pos[3])
     # summary, focus_z, fraction = etlcontroller.fullAutoFocus(127, is_double=True)   
     # for i in range(10):
@@ -75,17 +75,16 @@ if __name__ == "__main__":
     # Check dead time --> z_range = 0
     # summary, focus_z, fraction = etlcontroller.fullAutoFocus(127, is_double=False)   
 
-    n_holes_x = 10
-    n_holes_y = 10
-    step_x = 12
-    step_y = 12
-    
+    # n_holes_x = 10
+    # n_holes_y = 10
+    # step_x = 12
+    # step_y = 12
+    # 
     # etlcontroller.safeMovement(init_pos[0], init_pos[1], init_pos[2], init_pos[3])
-    # etlcontroller.safeMovement(init_pos[0]+22*step_x, init_pos[1], init_pos[2], init_pos[3])
-    # for ix in range(5, n_holes_x):
+    # for ix in range(0, n_holes_x):
     #     for iy in range(n_holes_y):
-    #         x_hole = init_pos[0] + ix*step_x
-    #         y_hole = init_pos[1] - iy*step_y
+    #         x_hole = init_pos[0] - ix*step_x
+    #         y_hole = init_pos[1] + iy*step_y
 
     #         etlcontroller.safeMovement(x_hole, y_hole, init_pos[2], init_pos[3])
     #         summary, focus_z, fraction = etlcontroller.fullAutoFocus(127, is_double=True)   
@@ -95,28 +94,16 @@ if __name__ == "__main__":
     #         position_j1j2j3j4 = etlcontroller.getPositionJ1J2J3()
     #         x, y, z, rz = position_xyzrz
     #         j1, j2, j3, j4 = position_j1j2j3j4
-    #         etlcontroller.camera.changeFileName(f"GluePlate/DoubleFocus/picture_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png")
+    #         etlcontroller.camera.changeFileName(f"GluePlate/DoubleFocus_Second/picture_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png")
     #         etlcontroller.camera.takePic()
-    # Second set of points
-    init_pos = [init_pos[0]+step_x*n_holes_x, init_pos[1]-step_y*n_holes_y, init_pos[2], init_pos[3]]
-    n_holes_x = 10
-    n_holes_y = 10
-    step_x = 12
-    step_y = 12
-    for ix in range(0, n_holes_x):
-        for iy in range(n_holes_y):
-            x_hole = init_pos[0] + ix*step_x
-            y_hole = init_pos[1] - iy*step_y
-
-            etlcontroller.safeMovement(x_hole, y_hole, init_pos[2], init_pos[3])
-            summary, focus_z, fraction = etlcontroller.fullAutoFocus(127, is_double=False)   
-            etlcontroller.changeZ(focus_z)
-            # Take pic
-            position_xyzrz = etlcontroller.getPositionXYZ()
-            position_j1j2j3j4 = etlcontroller.getPositionJ1J2J3()
-            x, y, z, rz = position_xyzrz
-            j1, j2, j3, j4 = position_j1j2j3j4
-            etlcontroller.camera.changeFileName(f"GluePlate/SingleFocus/picture_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png")
-            etlcontroller.camera.takePic()
+    
+    # Photo on the ruller
+    ruller_pos = [-21.91, -437.75, 180, 0.02]
+    etlcontroller.safeMovement(ruller_pos[0], ruller_pos[1], ruller_pos[2], ruller_pos[3])
+    summary, focus_z, fraction = etlcontroller.fullAutoFocus(129, is_double=True)   
+    etlcontroller.changeZ(focus_z)
+    # Take pic
+    etlcontroller.camera.changeFileName(f"RullerPic/picture_002_rz0.02.png")
+    etlcontroller.camera.takePic()
 
     etlcontroller.exit()

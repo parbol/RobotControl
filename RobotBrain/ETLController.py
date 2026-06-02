@@ -70,14 +70,23 @@ class ETLController:
         self.x_limit = -230
 
         # Valves mapping
-        # TODO -- Check because 2 is 0 and so on but 1 is 1
+        base_map = {
+            "A": 15,
+            "B": 14,
+            "C": 17,
+            "D": 16,
+        }
+
         self.valve_map = {}
-        for i_module in range(1,5):
-            for i, etroc in enumerate(["A", "B", "C", "D"]):
-                self.valve_map[f"ETROC_{i_module}{etroc}"] = [15 * (i_module-1) + i]
-        self.valve_map["PCB"] = [29]
-        self.valve_map["COVER"] = [30]
-        self.valve_map["TOOL"] = [31, 32]
+        for i_module in range(1, 5):
+            offset = 4 * (i_module - 1)
+
+            for etroc, base_valve in base_map.items():
+                self.valve_map[f"ETROC_{i_module}{etroc}"] = [base_valve + offset]
+
+        self.valve_map["PCB"] = [13]
+        self.valve_map["COVER"] = [12]
+        self.valve_map["TOOL"] = [30, 31]
 
         # Initialise arm in ETL mode, ETL is left handed, IT is right handed
         self.checkArmPlacement()
@@ -414,7 +423,6 @@ class ETLController:
         
         # General focus 
         summary, focus_z, fraction = self._singleAutoFocus(z_range=1, z_speed=0.03, up_down=True)
-        # summary, focus_z, fraction = self._singleAutoFocus(z_range=0.2, z_speed=0.001, up_down=True)
         if is_double:
             # Change Z to focus one
             self.changeZ(focus_z)
