@@ -224,34 +224,21 @@ if __name__ == "__main__":
     robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)
     
     # Initialize Robot
+    print("Before initialize robot")
     etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, True)
+    print("After initialize robot")
 
-    # Initialize position of assembly parts
-    assembly_parts_position = {}
-
-    modules_to_perform_assembly = [1, 2, 3, 4]
-    # Take pictures of the fiducial marks in the ETROCs, compute and store centers
-    etroc_pos = TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller)
-    assembly_parts_position.update(etroc_pos)
-    # Take pictures of the fiducial marks in the PCB, compute each PCB placement
-    pcb_pos = TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller)
-    assembly_parts_position.update(pcb_pos)
-
-    # Do assembly
-    # Grab picker tool if not already
-    etlcontroller.grabPickerTool()
-    # TODO
-    for i_module in modules_to_perform_assembly:
-        for i_etroc in ["A", "B", "C", "D"]:
-            # Pick ETROC, assume orientation is ok (apart from correction)
-            etroc_pos = assembly_parts_position[f"ETROC_{i_module}{i_etroc}"]
-            etlcontroller.grabAssemblyPart(etroc_pos[0], etroc_pos[1], Z_ETROCS, etroc_pos[2], f"ETROC_{i_module}{i_etroc}")
-            # Release ETROC in PCB, 1.- Move to position and apply correction angle 2.- Release
-            release_pos = assembly_parts_position[f"PCB_{i_module}{i_etroc}"]
-            etlcontroller.releaseAssemblyPart(release_pos[0], release_pos[1], Z_PCB, release_pos[2], f"PCB_{i_module}{i_etroc}")
-    
-    # Now 4 ETROCs are in each PCB
-    # Put the cover plate on top but I do not have any fiducial mark
+    valves = etlcontroller.nameToValves("TOOL", True)
+    etlcontroller.robotcontroller.setValves(valves)
+    input()
+    valves = etlcontroller.nameToValves("TOOL", False)
+    etlcontroller.robotcontroller.setValves(valves)
+    input()
+    valves = etlcontroller.nameToValves("ETROC_2A", True)
+    etlcontroller.robotcontroller.setValves(valves)
+    input()
+    valves = etlcontroller.nameToValves("ETROC_2A", False)
+    etlcontroller.robotcontroller.setValves(valves)
 
     # Close connection
     etlcontroller.exit()

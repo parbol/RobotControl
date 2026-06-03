@@ -21,19 +21,17 @@ if __name__ == "__main__":
 
     # The table
     table = Table(0.01, 0.0)
+    # The physical camera
     camera = None
-
     ################Initilize 3D setup model
     robot3D = Robot(50.0, 30.0, 30.0, table, camera)
 
-    # Initialize Camera
     robotCamera = None
-
     # Initialize Robot
     etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, False)
     
     # Change arm to right handed (IT)
-    while etlcontroller.checkArmPlacement():
-        etlcontroller.rotateArm(left_handed=False)
+    while not etlcontroller.checkArmPlacement():
+        etlcontroller.rotateArm(left_handed=True)
             
     etlcontroller.exit()

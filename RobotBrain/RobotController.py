@@ -370,7 +370,7 @@ class RobotController:
                 20 bits together, 1 per valve in the system. 0 or 1. 0 meaning Off and 1 meaning On
         """
         status_str = str(status)
-        if len(status_str) !=20 or any(c not in '01' for c in status_str):
+        if len(status_str) !=32 or any(c not in '01' for c in status_str):
             self.printError(f'Not valid status of the valves, it can be 0 or 1 and required status is {status_str}')
             return False
         

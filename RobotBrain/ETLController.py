@@ -30,6 +30,7 @@ class ETLController:
         self.debug = debug
         
         # Information for the client
+        print("initialize RobotController")
         self.robotcontroller = RobotController(device, bauds, debug)
 
         # Camera
@@ -69,12 +70,12 @@ class ETLController:
         # Define one region for picker tool and assembly, another region for Tamale plate
         self.x_limit = -230
 
-        # Valves mapping
+        # Valves mapping -1 for correct index
         base_map = {
-            "A": 15,
-            "B": 16,
-            "C": 17,
-            "D": 18,
+            "A": 14,
+            "B": 15,
+            "C": 16,
+            "D": 17,
         }
 
         self.valve_map = {}
@@ -84,8 +85,8 @@ class ETLController:
             for etroc, base_valve in base_map.items():
                 self.valve_map[f"ETROC_{i_module}{etroc}"] = [base_valve + offset]
 
-        self.valve_map["PCB"] = [13]
-        self.valve_map["COVER"] = [12]
+        self.valve_map["PCB"] = [12]
+        self.valve_map["COVER"] = [13]
         self.valve_map["TOOL"] = [30, 31]
 
         # Initialise arm in ETL mode, ETL is left handed, IT is right handed
@@ -409,10 +410,12 @@ class ETLController:
     ##############################################################################
     def nameToValves(self, name: str, to_open: bool):
         self.updateStatus()
-        valves = self.valves.copy() # Keep current status
+        valves = list(self.valves)
+
         for valve in self.valve_map[name]:
-            valves[valve] = 1 if to_open else 0
-        return valves
+            valves[valve] = "1" if to_open else "0"
+
+        return "".join(valves)
 
     ##############################################################################
     
@@ -581,7 +584,8 @@ class ETLController:
 
     ##############################################################################
     def exit(self):
-        self.camera.stop()
+        if self.camera is not None:
+            self.camera.stop()
         self.robotcontroller.stop()
     ##############################################################################
 
