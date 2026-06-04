@@ -56,22 +56,23 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller):
         Dictionary containing computed center positions in robot coordinates.
             center_pos["ETROC_{module}{A|B|C|D}"] = [x, y, rotation]
     """
-    with open("FiducialMarkPos.json") as f:
+    with open("runWorkflows/FiducialMarkPos.json") as f:
         positions = json.load(f)
 
     center_pos = {}
     # Take pic ETROCs
     for i_module in modules_to_perform_assembly:
-        for i_etroc in ["A", "B", "C", "D"]:
+        # for i_etroc in ["A", "B", "C", "D"]:
+        for i_etroc in ["A"]:
             corners = []
             for i_corner in range(4):
                 pos = positions[str(i_module)][f"ETROC_{i_module}{i_etroc}"][i_corner]
-                x = pos[0]
-                y = pos[1]
-                z = pos[2]
-                rz = pos[3]
+                x = pos["x"]
+                y = pos["y"]
+                z = pos["z"]
+                rz = pos["rz"]
                 # Autofocus
-                etlcontroller.SafeMovement(x, y, SAFE_Z, rz)
+                etlcontroller.safeMovement(x, y, SAFE_Z, rz)
                 summary, focus_z, fraction = etlcontroller.fullAutoFocus(z, is_double=True)
                 etlcontroller.changeZ(focus_z)
                 # Take pic
@@ -120,7 +121,7 @@ def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller):
             center_pos["PCB_{module}"] = [x, y, rotation]
             center_pos["PCB_{module}{ETROC}"] = [x, y, rotation]
     """
-    with open("FiducialMarkPos.json") as f:
+    with open("runWorkflows/FiducialMarkPos.json") as f:
         positions = json.load(f)
     center_pos = {}
     # Take pic PCBs
@@ -128,12 +129,12 @@ def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller):
         corners = []
         for i_corner in range(4):
             pos = positions[str(i_module)][f"PCB_{i_module}"][i_corner]
-            x = pos[0]
-            y = pos[1]
-            z = pos[2]
-            rz = pos[3]
+            x = pos["x"]
+            y = pos["y"]
+            z = pos["z"]
+            rz = pos["rz"]
             # Autofocus
-            etlcontroller.SafeMovement(x, y, SAFE_Z, rz)
+            etlcontroller.safeMovement(x, y, SAFE_Z, rz)
             _, focus_z, _ = etlcontroller.fullAutoFocus(z, is_double=True)
             etlcontroller.changeZ(focus_z)
             # Take pic
@@ -224,7 +225,7 @@ if __name__ == "__main__":
     robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)
     
     # Initialize Robot
-    etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, True)
+    etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, False)
 
     # Initialize position of assembly parts
     assembly_parts_position = {}
@@ -242,7 +243,8 @@ if __name__ == "__main__":
     etlcontroller.grabPickerTool()
     # TODO
     for i_module in modules_to_perform_assembly:
-        for i_etroc in ["A", "B", "C", "D"]:
+        # for i_etroc in ["A", "B", "C", "D"]:
+        for i_etroc in ["A"]:
             # Pick ETROC, assume orientation is ok (apart from correction)
             etroc_pos = assembly_parts_position[f"ETROC_{i_module}{i_etroc}"]
             etlcontroller.grabAssemblyPart(etroc_pos[0], etroc_pos[1], Z_ETROCS, etroc_pos[2], f"ETROC_{i_module}{i_etroc}")
