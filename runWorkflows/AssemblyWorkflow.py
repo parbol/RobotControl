@@ -10,6 +10,7 @@ from ExperimentalSetup.Camera import Camera
 from ExperimentalSetup.Robot import Robot
 from ExperimentalSetup.Table import Table
 from ExperimentalSetup.CalibrationHandler import CalibrationHandler
+import ImageAnalysis.ProcessFiducialPoint_ETROC as ProcessFiducialPoint_ETROC
 import ImageAnalysis.ProcessFiducialPoint as ProcessFiducialPoint
 
 ## Geometry and naming scheme
@@ -84,7 +85,7 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller):
                 etlcontroller.camera.changeFileName(image_name)
                 etlcontroller.camera.takePic()
                 # Procces pic and extract center
-                p = ProcessFiducialPoint.ProcessFiducialPoint(image_name)
+                p = ProcessFiducialPoint.ProcessFiducialPoint_ETROC(image_name, is_ETROC=True)
                 x_pic, y_pic, d_pic, valid = p.fit()
                 # Change from pixels to Robot Coordinates
                 x_reco_robot, y_reco_robot, z_reco_robot = etlcontroller.robot.cameraProjectionToPoint3D([x_pic, y_pic])
@@ -146,7 +147,7 @@ def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller):
             etlcontroller.camera.changeFileName(image_name)
             etlcontroller.camera.takePic()
             # Procces pic and extract center
-            p = ProcessFiducialPoint.ProcessFiducialPoint(image_name)
+            p = ProcessFiducialPoint.ProcessFiducialPoint(image_name, is_ETROC=False)
             x_pic, y_pic, d_pic, valid = p.fit()
             # Change from pixels to Robot Coordinates
             x_reco_robot, y_reco_robot, z_reco_robot = etlcontroller.robot.cameraProjectionToPoint3D([x_pic, y_pic])
