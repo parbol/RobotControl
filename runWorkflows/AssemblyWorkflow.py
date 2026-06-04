@@ -207,7 +207,7 @@ if __name__ == "__main__":
     # The table
     table = Table(0.01, 0.0)
     # Get Calibration
-    calibrationHandler = CalibrationHandler()
+    calibrationHandler = CalibrationHandler(name="ExperimentalSetup/Calibrations/calibrations.txt")
     cali = calibrationHandler.getLastCalibration()
 
     # The physical camera
