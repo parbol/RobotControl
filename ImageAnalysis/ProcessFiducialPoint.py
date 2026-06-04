@@ -36,74 +36,67 @@ class ProcessFiducialPoint:
         axs[0].set_title('Original image')
        
         #Getting the main contour
-        _, thresh = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY_INV)
+        _, thresh = cv2.threshold(gray, 60, 255, cv2.THRESH_BINARY)
+        axs[1].imshow(thresh, cmap='gray')
+        axs[1].set_title('Thresholded image')
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         contourssorted = sorted(contours, key=cv2.contourArea, reverse=True)
+        print(f"Found {len(contours)} contours")
+
+        for i, c in enumerate(contourssorted):
+            print(f"Contour {i}: area = {cv2.contourArea(c):.1f}")
+
+        discarded_label = False
+        for i, c in enumerate(contourssorted):
+            if cv2.contourArea(c) < 1:
+                continue
+            c = c.squeeze()
+            if i == 0:
+                axs[1].plot(c[:,0], c[:,1], 'g', linewidth=2, label="Selected contour")
+            else:
+                if not discarded_label:
+                    axs[1].plot(c[:,0], c[:,1], 'r', linewidth=2, label="Discarded contours")
+                    discarded_label = True
+                else:
+                    axs[1].plot(c[:,0], c[:,1], 'r', linewidth=2)
+        axs[1].legend()
         
-        valid = self.checkConsistency(contourssorted)
+        contourselected = contourssorted[0]
+        valid = self.checkConsistency(contourselected)
         
         if not valid:
             self.printError('Pattern recognition unsuccessfull')
-            return 0, 0, 0, False
+            return 0, 0, False
 
-        arrayx, arrayy, x, y, d, valid = self.estimateDistances(contourssorted)
+        x, y, valid = self.estimateDistances(contourselected)
         
-        axs[1].imshow(thresh, cmap='gray')
-        axs[1].set_title('Contour selection')
-        
-        #Drawing final
-        circle = plt.Circle((x,y), 5, color='blue', fill=True)
+        # Drawing final
+        circle = plt.Circle((x,y), 10, color='red', fill=True)
         axs[2].add_patch(circle)
         axs[2].imshow(gray, cmap='gray')
         axs[2].set_title('Final estimate')
-        plt.plot(arrayx, arrayy, color='red')
         plt.show()
-        return x, y, d, True
+        return x, y, valid
 
 
     ##############################################################################
     def checkConsistency(self, c):
-        
-        if len(c) < 5:
+        area = cv2.contourArea(c)
+        if area < 100000.0 or area > 400000.0:
             return False
-        for i in range(1, 5):
-            area = cv2.contourArea(c[i])
-            if area < 10000.0 or area > 20000.0:
-                return False
         return True
 
     ##############################################################################
     
     ##############################################################################
     def estimateDistances(self, c):
-
-        x = []
-        y = []
-        for i in range(1, 5):
-            M = cv2.moments(c[i])
-            cx = int(M['m10']/M['m00'])
-            cy = int(M['m01']/M['m00'])
-            x.append(cx)
-            y.append(cy)
-        
-        xc = np.mean(np.asarray(x))
-        yc = np.mean(np.asarray(y))
-        d = []
-        for i in range(4):
-            for j in range(4):
-                if i == j:
-                    continue
-                d.append(math.sqrt((x[i]-x[j])**2 + (y[i]-y[j])**2))
-        dsorted = sorted(d, reverse=True)
-        dmean = 0
-        for i in range(4):
-            dmean += dsorted[i]
-        dmean = dmean/4.0
-        #This is needed for drawing purposes
-        x.append(x[0])
-        y.append(y[0])
-        return x, y, xc, yc, dmean, True
+        M = cv2.moments(c)
+        if M["m00"] == 0:
+            return 0, 0, False
+        x = int(M['m10']/M['m00'])
+        y = int(M['m01']/M['m00'])
+        return x, y, True
 
 
     ##############################################################################
