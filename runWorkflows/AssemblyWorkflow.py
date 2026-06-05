@@ -3,6 +3,7 @@ from matplotlib.image import imread
 import matplotlib.pyplot as plt
 import numpy as np
 import json
+import time
 
 from CameraClient.RobotCamera import RobotCamera
 from RobotBrain.ETLController import ETLController
@@ -10,7 +11,6 @@ from ExperimentalSetup.Camera import Camera
 from ExperimentalSetup.Robot import Robot
 from ExperimentalSetup.Table import Table
 from ExperimentalSetup.CalibrationHandler import CalibrationHandler
-import ImageAnalysis.ProcessFiducialPoint_ETROC as ProcessFiducialPoint_ETROC
 import ImageAnalysis.ProcessFiducialPoint as ProcessFiducialPoint
 
 ## Geometry and naming scheme
@@ -73,6 +73,7 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller):
                 z = pos["z"]
                 rz = pos["rz"]
                 # Autofocus
+                print(f"Photo position = {x}, {y}, {z}, {rz}")
                 etlcontroller.safeMovement(x, y, SAFE_Z, rz)
                 summary, focus_z, fraction = etlcontroller.fullAutoFocus(z, is_double=True)
                 etlcontroller.changeZ(focus_z)
@@ -85,11 +86,12 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller):
                 etlcontroller.camera.changeFileName(image_name)
                 etlcontroller.camera.takePic()
                 # Procces pic and extract center
-                p = ProcessFiducialPoint.ProcessFiducialPoint_ETROC(image_name, is_ETROC=True)
-                x_pic, y_pic, d_pic, valid = p.fit()
+                p = ProcessFiducialPoint.ProcessFiducialPoint(image_name, is_ETROC=True)
+                x_pic, y_pic, valid = p.fit()
                 # Change from pixels to Robot Coordinates
                 x_reco_robot, y_reco_robot, z_reco_robot = etlcontroller.robot.cameraProjectionToPoint3D([x_pic, y_pic])
                 corners.append([x_reco_robot, y_reco_robot])
+                time.sleep(5)
 
             # Compute center position of the ETROC
             corners = np.asarray(corners)
@@ -148,7 +150,7 @@ def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller):
             etlcontroller.camera.takePic()
             # Procces pic and extract center
             p = ProcessFiducialPoint.ProcessFiducialPoint(image_name, is_ETROC=False)
-            x_pic, y_pic, d_pic, valid = p.fit()
+            x_pic, y_pic, valid = p.fit()
             # Change from pixels to Robot Coordinates
             x_reco_robot, y_reco_robot, z_reco_robot = etlcontroller.robot.cameraProjectionToPoint3D([x_pic, y_pic])
             corners.append([x_reco_robot, y_reco_robot])
@@ -226,7 +228,7 @@ if __name__ == "__main__":
     robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)
     
     # Initialize Robot
-    etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, False)
+    etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, True)
 
     # Initialize position of assembly parts
     assembly_parts_position = {}

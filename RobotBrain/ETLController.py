@@ -30,7 +30,6 @@ class ETLController:
         self.debug = debug
         
         # Information for the client
-        print("initialize RobotController")
         self.robotcontroller = RobotController(device, bauds, debug)
 
         # Camera
@@ -165,6 +164,7 @@ class ETLController:
         self.printLog(f"Moving to {[x, y, z, rz]}")
         # Go up to safe z
         self.updateStatus()
+        input(f"Going to move Z from {self.position[2]} to {self.safe_z}")
         self.changeZ(self.safe_z)
         self.updateStatus()
         # XXX - Check colision with the robot as a minimum radio or something similar?
@@ -273,6 +273,7 @@ class ETLController:
         self.updateStatus()
         self.printLog(f"Moving to z = {z}")
         # XXX - Define a range of safe z?
+        print(f"self position = {self.position_xyzrz}")
         self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], z, self.position_xyzrz[3])
         self.updateStatus()
         return True

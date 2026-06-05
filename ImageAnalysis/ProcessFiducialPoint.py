@@ -116,7 +116,7 @@ class ProcessFiducialPoint:
         axs[2].imshow(gray, cmap='gray')
         axs[2].set_title('Final estimate')
         plt.plot(arrayx, arrayy, color='red')
-        plt.show()
+        plt.savefig(f"Fit_{self.imageName}")
         return x, y, valid
 
     ##############################################################################

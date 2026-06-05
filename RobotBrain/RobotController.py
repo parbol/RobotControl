@@ -325,6 +325,7 @@ class RobotController:
             return True
         else:
             print(f"Error position is not matching pos = {self.position_j1j2j3}")
+            time.sleep(1)
             self.askStatus()
             if (self.position_j1j2j3[0] - j1)**2 + (self.position_j1j2j3[1] - j2)**2 + (self.position_j1j2j3[2] - j3)**2 < 0.01**2: 
                 return True
