@@ -146,6 +146,7 @@ class ETLController:
 
     ##############################################################################
     def updateStatus(self):
+        self.robotcontroller.askStatus()
         self.position_xyzrz = self.robotcontroller.getPositionXYZ()
         self.position_j1j2j3j4 = self.robotcontroller.getPositionJ1J2J3()
         self.valves = self.robotcontroller.getValveStatus()

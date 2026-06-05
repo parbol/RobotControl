@@ -132,13 +132,9 @@ class RobotController:
         counter = 0
         text = ''
         while True:
-            self.printDebug(f"Counter = {counter}")
-            self.printDebug(f"Text read = {text}")
             msg = self.serial.read(self.msg_length)
-            self.printDebug(f"msg = {msg}")
             text = text + msg.decode()
             counter = counter + len(msg)
-            self.printDebug(f"Counter after msg = {counter}")
             if counter == self.msg_length:
                 break
         # Message is of the form: "@@@@@POS:....ANGLES:.....VALVES:....EM:...."
