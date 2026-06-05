@@ -29,9 +29,10 @@ class ProcessFiducialPoint:
         img = cv2.imread(self.imageName)
         self.img_height, self.img_width = img.shape[:2]
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (5,5), 0)
         
         #Getting contours
-        _, thresh = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY_INV)
+        _, thresh = cv2.threshold(blurred, 50, 255, cv2.THRESH_BINARY_INV)
         contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
         contourssorted = sorted(contours, key=cv2.contourArea, reverse=True)
@@ -39,8 +40,8 @@ class ProcessFiducialPoint:
         # Second is the whole Fiducial mark (also possible to obtain center of mass)
         # Select 3,4,5,6 wich are the inner circles
         contoursselected = contourssorted[2:6]
-
-        return contoursselected, contourssorted, gray, thresh
+        # return contoursselected, contourssorted, gray, thresh
+        return contoursselected, contourssorted, blurred, thresh
 
     def selectContour_PCB(self):
         self.printLog('Starting the fit with image ' + self.imageName)

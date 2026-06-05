@@ -165,7 +165,6 @@ class ETLController:
         self.printLog(f"Moving to {[x, y, z, rz]}")
         # Go up to safe z
         self.updateStatus()
-        input(f"Going to move Z from {self.position[2]} to {self.safe_z}")
         self.changeZ(self.safe_z)
         self.updateStatus()
         # XXX - Check colision with the robot as a minimum radio or something similar?

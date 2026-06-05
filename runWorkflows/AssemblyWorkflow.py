@@ -66,8 +66,13 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller):
         # for i_etroc in ["A", "B", "C", "D"]:
         for i_etroc in ["A"]:
             corners = []
+            print("*"*20)
+            print(f" Module {i_module}")
+            print(f" ETROC {i_etroc}")
+            print("*"*20)
             for i_corner in range(4):
                 pos = positions[str(i_module)][f"ETROC_{i_module}{i_etroc}"][i_corner]
+                print(pos)
                 x = pos["x"]
                 y = pos["y"]
                 z = pos["z"]
@@ -228,12 +233,13 @@ if __name__ == "__main__":
     robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)
     
     # Initialize Robot
-    etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, True)
+    etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, False)
 
     # Initialize position of assembly parts
     assembly_parts_position = {}
 
-    modules_to_perform_assembly = [1, 2, 3, 4]
+    # modules_to_perform_assembly = [1, 2, 3, 4]
+    modules_to_perform_assembly = [1]
     # Take pictures of the fiducial marks in the ETROCs, compute and store centers
     etroc_pos = TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller)
     assembly_parts_position.update(etroc_pos)
