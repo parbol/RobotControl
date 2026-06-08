@@ -3,7 +3,7 @@ from datetime import datetime
 
 class CalibrationHandler:
 
-    def __init__(self, name='../../ExperimentalSetup/Calibrations/calibrations.txt'):
+    def __init__(self, name='ExperimentalSetup/Calibrations/calibrations.txt'):
 
         self.name = name
         f = open(self.name)

@@ -25,7 +25,7 @@ if __name__ == "__main__":
     # The table
     table = Table(0.01, 0.0)
     # The physical camera
-    camera = Camera(x = 2.0, y = 0.0, z = -27.0, psi = 0.0, theta = 0.0, phi = 0.0, cx = 0.5, cy = 0.5, focaldistance = 10, sigmaCamera = 0.001)
+    camera = Camera(x = 2.0, y = 0.0, z = -27.0, psi = 0.0, theta = 0.0, phi = 0.0, cx = 0.5, cy = 0.5, focaldistance = 10, focusdistance=10)
     # The graphs
     fig = plt.figure(figsize = (16, 8), layout="constrained")
     gs0 = fig.add_gridspec(1, 2, width_ratios=[2, 1])
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     ax3.axes.set_xlim((-1.0, 1.0))
     ax3.axes.set_ylim((-1.0, 1.0))
     # The 3D model of the robot
-    robot3D = Robot(50.0, 30.0, 30.0, 40, table, camera, fig, ax1, ax2, ax3)
+    robot3D = Robot(50.0, 30.0, 30.0, table, camera)
 
     #Initialize Camera
     robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)

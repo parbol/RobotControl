@@ -17,7 +17,7 @@ import re
 class RobotController:
 
     ##############################################################################
-    def __init__(self, device, bauds, robot3D, debug = False):
+    def __init__(self, device, bauds, debug = False):
 
         #Technical stuff
         self.HEADER = '\033[95m'
@@ -32,9 +32,6 @@ class RobotController:
         #Information for the client
         self.device = device
         self.bauds = bauds
-
-        #Robot3D model
-        self.robot3D = robot3D
 
         #Show off
         self.showBanner()
@@ -224,10 +221,10 @@ class RobotController:
     ##############################################################################
 
     ##############################################################################
-    def getAceleration(self):
+    def getAcceleration(self):
         return self.acceleration
 
-    def changeAceleration(self, a):
+    def changeAcceleration(self, a):
         if a >= 0 and a<=100:
             self.acceleration = a
             return True
@@ -373,7 +370,7 @@ class RobotController:
                 20 bits together, 1 per valve in the system. 0 or 1. 0 meaning Off and 1 meaning On
         """
         status_str = str(status)
-        if len(status_str) !=20 or any(c not in '01' for c in status_str):
+        if len(status_str) !=32 or any(c not in '01' for c in status_str):
             self.printError(f'Not valid status of the valves, it can be 0 or 1 and required status is {status_str}')
             return False
         
