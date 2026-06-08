@@ -48,7 +48,7 @@ class ETLController:
         # Movement information
         self.safe_z = 180
         self.safe_rz = 60
-        self.picker_tool = [-332.36, 173.79, 94,-161.17]
+        self.picker_tool = [-332.36, 173.79, 91.13,-161.17]
         self.safe_position = [-361.43, -421.93, self.safe_z, self.safe_rz]
         # Plate central position in angular coordinates
         # TODO - update j4
@@ -61,7 +61,7 @@ class ETLController:
         # TODO check when does Y change sign
         self.plate_position_xyzrz = {1: [292, -417, self.safe_z, 107], 
                                      2: [-292, -390, self.safe_z, 107],
-                                     3: [-319, 155, self.safe_z, 107],
+                                     3: [-319, -155, self.safe_z, 107],
                                      4: [-332, 174, self.safe_z, -161]
                                      }
        
@@ -273,7 +273,6 @@ class ETLController:
         self.updateStatus()
         self.printLog(f"Moving to z = {z}")
         # XXX - Define a range of safe z?
-        print(f"self position = {self.position_xyzrz}")
         self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], z, self.position_xyzrz[3])
         self.updateStatus()
         return True
@@ -325,8 +324,14 @@ class ETLController:
 
     ##############################################################################
     def grabPickerTool(self):
-        self.safeMovement(self.picker_tool[0], self.picker_tool[1], self.picker_tool[2], self.picker_tool[3])
+        self.safeMovement(self.picker_tool[0], self.picker_tool[1], self.safe_z, self.picker_tool[3])
+        self.changeZ(self.picker_tool[2]+10)
+        v = self.getVelocity()
+        self.setVelocity(10)
+        self.changeZ(self.picker_tool[2])
         self.robotcontroller.setEM(1)
+        self.setVelocity(v)
+        time.sleep(1)
         self.updateStatus()
         self.changeZ(self.safe_z)
         return True
@@ -335,11 +340,17 @@ class ETLController:
 
     ##############################################################################
     def releasePickerTool(self):
-        self.safeMovement(self.picker_tool[0], self.picker_tool[1], self.picker_tool[2], self.picker_tool[3])
+        self.safeMovement(self.picker_tool[0], self.picker_tool[1], self.safe_z, self.picker_tool[3])
+        self.changeZ(self.picker_tool[2]+10)
+        v = self.getVelocity()
+        self.setVelocity(10)
+        self.changeZ(self.picker_tool[2])
         self.robotcontroller.setEM(0)
+        self.setVelocity(v)
+        time.sleep(1)
         self.updateStatus()
         self.changeZ(self.safe_z)
-
+        return True
     ##############################################################################
 
 

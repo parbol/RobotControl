@@ -29,7 +29,7 @@ class ProcessFiducialPoint:
         img = cv2.imread(self.imageName)
         self.img_height, self.img_width = img.shape[:2]
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray, (5,5), 0)
+        blurred = cv2.GaussianBlur(gray, (5,5), 2)
         
         #Getting contours
         _, thresh = cv2.threshold(blurred, 50, 255, cv2.THRESH_BINARY_INV)
@@ -39,7 +39,15 @@ class ProcessFiducialPoint:
         # First contour is whole image
         # Second is the whole Fiducial mark (also possible to obtain center of mass)
         # Select 3,4,5,6 wich are the inner circles
-        contoursselected = contourssorted[2:6]
+        # contoursselected = contourssorted[2:6]
+        
+        # Select first 4 contours with size smaller than a threshold
+        contoursselected = []
+        for i, c in enumerate(contourssorted):
+            area = cv2.contourArea(c)
+            if area < 35000.0:
+                break
+        contoursselected = contourssorted[i:i+4]
         # return contoursselected, contourssorted, gray, thresh
         return contoursselected, contourssorted, blurred, thresh
 
@@ -51,17 +59,26 @@ class ProcessFiducialPoint:
         img = cv2.imread(self.imageName)
         self.img_height, self.img_width = img.shape[:2]
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (5,5), 2)
         
         #Getting contours
-        _, thresh = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY_INV)
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        _, thresh = cv2.threshold(blurred, 50, 255, cv2.THRESH_BINARY_INV)
+        contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
         contourssorted = sorted(contours, key=cv2.contourArea, reverse=True)
         # First is the whole Fiducial mark (also possible to obtain center of mass)
-        # Select 2,3,4,5 wich are the inner circles
-        contoursselected = contourssorted[1:5]
+        # Select 2,3,4,5 which are the inner circles
+        # contoursselected = contourssorted[3:7]
 
-        return contoursselected, contourssorted, gray, thresh
+        # Select first 4 contours with size smaller than a threshold
+        contoursselected = []
+        for i, c in enumerate(contourssorted):
+            area = cv2.contourArea(c)
+            if area < 35000.0:
+                break
+        contoursselected = contourssorted[i:i+4]
+
+        return contoursselected, contourssorted, blurred, thresh
 
     def fit(self):
         # Get contours
@@ -94,6 +111,7 @@ class ProcessFiducialPoint:
 
         _is_first_contour = True
         for i, c in enumerate(contoursselected):
+            # print(cv2.contourArea(c))
             c = c.squeeze()
             if _is_first_contour:
                 axs[1].plot(c[:,0], c[:,1], 'g', linewidth=2, label="Selected contours")
@@ -124,7 +142,7 @@ class ProcessFiducialPoint:
     def checkConsistency(self, c):
         for i in range(len(c)):
             area = cv2.contourArea(c[i])
-            if area < 10000.0 or area > 40000.0:
+            if area < 15000.0 or area > 35000.0:
                 print(f"Not right area {area}")
                 return False
         return True
