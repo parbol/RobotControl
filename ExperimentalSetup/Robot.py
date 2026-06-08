@@ -104,13 +104,13 @@ class Robot:
        
         robotPointerToCamera = self.camera.r0[0] * self.ux + self.camera.r0[1] * self.uy + self.camera.r0[2] * self.uz
         self.camera.r = self.position + self.jzrot.apply(robotPointerToCamera)      
-        self.camera.ux = self.camera.r - self.position
-        self.camera.ux = self.camera.ux/np.linalg.norm(self.camera.ux)
-        self.camera.uz = self.uz
-        self.camera.uy = np.cross(self.camera.uz, self.camera.ux)
-        #self.camera.ux = self.jzrot.apply(self.ux)
-        #self.camera.uy = self.jzrot.apply(self.uy)
-        #self.camera.uz = self.jzrot.apply(self.uz)
+        #self.camera.ux = self.camera.r - self.position
+        #self.camera.ux = self.camera.ux/np.linalg.norm(self.camera.ux)
+        #self.camera.uz = self.uz
+        #self.camera.uy = np.cross(self.camera.uz, self.camera.ux)
+        self.camera.ux = self.jzrot.apply(self.ux)
+        self.camera.uy = self.jzrot.apply(self.uy)
+        self.camera.uz = self.jzrot.apply(self.uz)
         self.camera.ux = self.camera.rotation0.apply(self.camera.ux)
         self.camera.uy = self.camera.rotation0.apply(self.camera.uy)
         self.camera.uz = self.camera.rotation0.apply(self.camera.uz)
@@ -267,7 +267,7 @@ class Robot:
         corrCameraZ[2] = self.Z0 - self.camera.r[2]
         
         vx = ((p[0]-self.camera.npixelx/2.0)/self.camera.cx) * self.camera.ux
-        vy = ((p[1]-self.camera.npixely/2.0)/self.camera.cy) * self.camera.uy
+        vy = ((-p[1]+self.camera.npixely/2.0)/self.camera.cy) * self.camera.uy
         vz = corrCameraZ + self.camera.focaldistance * self.camera.uz
 
         pointInFocalPlane = vz + vx + vy
