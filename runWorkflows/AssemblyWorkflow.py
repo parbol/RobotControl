@@ -94,7 +94,10 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller):
                 p = ProcessFiducialPoint.ProcessFiducialPoint(image_name, is_ETROC=True)
                 x_pic, y_pic, valid = p.fit()
                 # Change from pixels to Robot Coordinates
+                # XXX - I need to update robot simulation position
+                etlcontroller.robot.JMoveRobotTo(position_j1j2j3j4)
                 x_reco_robot, y_reco_robot, z_reco_robot = etlcontroller.robot.cameraProjectionToPoint3D([x_pic, y_pic])
+                print(f"Reconstructed position = {x_reco_robot}, {y_reco_robot}")
                 corners.append([x_reco_robot, y_reco_robot])
                 time.sleep(5)
 
@@ -157,7 +160,10 @@ def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller):
             p = ProcessFiducialPoint.ProcessFiducialPoint(image_name, is_ETROC=False)
             x_pic, y_pic, valid = p.fit()
             # Change from pixels to Robot Coordinates
+            # XXX - I need to update robot simulation position
+            etlcontroller.robot.JMoveRobotTo(position_j1j2j3j4)
             x_reco_robot, y_reco_robot, z_reco_robot = etlcontroller.robot.cameraProjectionToPoint3D([x_pic, y_pic])
+            print(f"Reconstructed position = {x_reco_robot}, {y_reco_robot}")
             corners.append([x_reco_robot, y_reco_robot])
         # Compute center position of the ETROC
         corners = np.asarray(corners)
@@ -187,30 +193,6 @@ if __name__ == "__main__":
     parser.add_option("-b", "--bauds", dest="bauds", type=int, default=115200, help="Robot bauds.")
     (options, args) = parser.parse_args()
 
-    # The graphs
-    fig = plt.figure(figsize = (16, 8), layout="constrained")
-    gs0 = fig.add_gridspec(1, 2, width_ratios=[2, 1])
-    ax1 = fig.add_subplot(gs0[0], projection = '3d')
-    gs1 = gs0[1].subgridspec(2,1)
-    ax2 = fig.add_subplot(gs1[0])
-    ax3 = fig.add_subplot(gs1[1])
-    ax1.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    ax1.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    ax1.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    ax1.set_xlabel('x [cm]')
-    ax1.set_ylabel('y [cm]')
-    ax1.set_zlabel('z [cm]')
-    ax2.set_xlabel('x [cm]')
-    ax2.set_ylabel('y [cm]')
-    ax3.set_xlabel('z [cm]')
-    ax3.set_ylabel('y [cm]')
-    ax1.axes.set_xlim3d(left=-70, right=70.0)
-    ax1.axes.set_ylim3d(bottom=-70, top=70.0)
-    ax2.axes.set_xlim((-40.0, 70.0))
-    ax2.axes.set_ylim((-70.0, 40.0))
-    ax3.axes.set_xlim((-1.0, 1.0))
-    ax3.axes.set_ylim((-1.0, 1.0))
-
     ################ Initialize 3D setup model
     # The table
     table = Table(0.01, 0.0)
@@ -239,32 +221,32 @@ if __name__ == "__main__":
     assembly_parts_position = {}
 
     # modules_to_perform_assembly = [1, 2, 3, 4]
-    # modules_to_perform_assembly = [1]
-    # # Take pictures of the fiducial marks in the ETROCs, compute and store centers
-    # etroc_pos = TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller)
-    # assembly_parts_position.update(etroc_pos)
-    # # Take pictures of the fiducial marks in the PCB, compute each PCB placement
-    # pcb_pos = TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller)
-    # assembly_parts_position.update(pcb_pos)
+    modules_to_perform_assembly = [1]
+    # Take pictures of the fiducial marks in the ETROCs, compute and store centers
+    etroc_pos = TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller)
+    assembly_parts_position.update(etroc_pos)
+    # Take pictures of the fiducial marks in the PCB, compute each PCB placement
+    pcb_pos = TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller)
+    assembly_parts_position.update(pcb_pos)
 
-    # # Do assembly
-    # # Grab picker tool if not already
-    # etlcontroller.grabPickerTool()
-    # # TODO
-    # for i_module in modules_to_perform_assembly:
-    #     # for i_etroc in ["A", "B", "C", "D"]:
-    #     for i_etroc in ["A"]:
-    #         # Pick ETROC, assume orientation is ok (apart from correction)
-    #         etroc_pos = assembly_parts_position[f"ETROC_{i_module}{i_etroc}"]
-    #         print(f"Moving to grab ETROC from {etroc_pos}")
-    #         etlcontroller.grabAssemblyPart(etroc_pos[0], etroc_pos[1], Z_ETROCS, etroc_pos[2], f"ETROC_{i_module}{i_etroc}")
-    #         # Release ETROC in PCB, 1.- Move to position and apply correction angle 2.- Release
-    #         release_pos = assembly_parts_position[f"PCB_{i_module}{i_etroc}"]
-    #         print(f"Moving to release ETROC at {release_pos}")
-    #         etlcontroller.releaseAssemblyPart(release_pos[0], release_pos[1], Z_PCB, release_pos[2], f"PCB_{i_module}{i_etroc}")
-    # 
-    # # Now 4 ETROCs are in each PCB
-    # # Put the cover plate on top but I do not have any fiducial mark
+    # Do assembly
+    # Grab picker tool if not already
+    etlcontroller.grabPickerTool()
+    # TODO
+    for i_module in modules_to_perform_assembly:
+        # for i_etroc in ["A", "B", "C", "D"]:
+        for i_etroc in ["A"]:
+            # Pick ETROC, assume orientation is ok (apart from correction)
+            etroc_pos = assembly_parts_position[f"ETROC_{i_module}{i_etroc}"]
+            print(f"Moving to grab ETROC from {etroc_pos}")
+            etlcontroller.grabAssemblyPart(etroc_pos[0], etroc_pos[1], Z_ETROCS, etroc_pos[2], f"ETROC_{i_module}{i_etroc}")
+            # Release ETROC in PCB, 1.- Move to position and apply correction angle 2.- Release
+            release_pos = assembly_parts_position[f"PCB_{i_module}{i_etroc}"]
+            print(f"Moving to release ETROC at {release_pos}")
+            etlcontroller.releaseAssemblyPart(release_pos[0], release_pos[1], Z_PCB, release_pos[2], f"PCB_{i_module}{i_etroc}")
+    
+    # Now 4 ETROCs are in each PCB
+    # Put the cover plate on top but I do not have any fiducial mark
 
-    # # Close connection
+    # Close connection
     etlcontroller.exit()
