@@ -34,8 +34,8 @@ import ImageAnalysis.ProcessFiducialPoint as ProcessFiducialPoint
 
 ## Constants
 SAFE_Z = 180
-Z_ETROCS = 136 # TODO - Check
-Z_PCB = 150 # TODO - Check
+Z_ETROCS = 125 
+Z_PCB = 138
 Z_COVER = 140 # TODO - Check
 
 def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller):
