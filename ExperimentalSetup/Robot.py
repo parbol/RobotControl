@@ -263,12 +263,17 @@ class Robot:
     def cameraProjectionToPoint3D(self, p_):
        
         p = np.copy(p_)
+        
+        print(f"Point: {p}")
         corrCameraZ = np.copy(self.camera.r)
+        print(f"corrCamera =  {corrCameraZ}")
         corrCameraZ[2] = self.Z0 - self.camera.r[2]
+        print(f"corrCamera =  {corrCameraZ}")
         
         vx = ((p[0]-self.camera.npixelx/2.0)/self.camera.cx) * self.camera.ux
         vy = ((-p[1]+self.camera.npixely/2.0)/self.camera.cy) * self.camera.uy
         vz = corrCameraZ + self.camera.focaldistance * self.camera.uz
+        print(f"vx = {vx}, vy = {vy}, vz = {vz}") 
 
         pointInFocalPlane = vz + vx + vy
         s = corrCameraZ - pointInFocalPlane
@@ -278,6 +283,7 @@ class Robot:
         l = (-self.camera.focusdistance) / sdotuz
         #p = self.camera.r + l * s
         p = corrCameraZ + l * s
+        print(f"Result = {p[0]}, {p[1]}, {self.Z0-p[2]}")
         return np.asarray([p[0], p[1], self.Z0 - p[2]])
 
     

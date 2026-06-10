@@ -23,6 +23,17 @@ class Camera:
         self.ux = np.asarray([1.0, 0.0, 0.0])
         self.uy = np.asarray([0.0, 1.0, 0.0])
         self.uz = np.asarray([0.0, 0.0, 1.0])
+
+        print(f"Calibration values in Camera init: ")
+        print(f" cameraX = {self.r0[0]}")
+        print(f" cameraY = {self.r0[1]}")
+        print(f" cameraZ = {self.r0[2]}")
+        print(f" cameraPsi = {self.psi}")
+        print(f" cameraPhi = {self.phi}")
+        print(f" cameraTheta = {self.theta}")
+        print(f" c = {self.cx}. {self.cy}")
+        print(f" focusdistance = {self.focusdistance}")
+        print(f" focaldistance = {self.focaldistance}")
       
 
     def update(self):
