@@ -127,8 +127,7 @@ def TakePicFiducialMarks_ETROC(images, robot):
         x_pic, y_pic, valid = p.fit()
         print(f"Position of center: {x_pic}, {y_pic} px")
         # Change from pixels to Robot Coordinates
-        # XXX - I need to update robot simulation position
-        robot.JMoveRobotTo([j1, j2, j3, rz])
+        robot.JMoveRobotTo([np.radians(j1), np.radians(j2), j3, np.radians(j4)])
         print("After moving the robot")
         x_reco_robot, y_reco_robot, z_reco_robot = robot.cameraProjectionToPoint3D([x_pic, y_pic])
         print(f"Reconstructed position = {x_reco_robot}, {y_reco_robot} mm")
@@ -172,8 +171,7 @@ def TakePicFiducialMarks_PCB(images, robot):
         p = ProcessFiducialPoint.ProcessFiducialPoint(i_image, is_ETROC=True)
         x_pic, y_pic, valid = p.fit()
         # Change from pixels to Robot Coordinates
-        # XXX - I need to update robot simulation position
-        robot.JMoveRobotTo([j1, j2, j3, j4])
+        robot.JMoveRobotTo([np.radians(j1), np.radians(j2), j3, np.radians(j4)])
         x_reco_robot, y_reco_robot, z_reco_robot = robot.cameraProjectionToPoint3D([x_pic, y_pic])
         print(f"Reconstructed position = {x_reco_robot}, {y_reco_robot}")
         corners.append([x_reco_robot, y_reco_robot])
@@ -238,12 +236,13 @@ if __name__ == "__main__":
 
     etroc_pos = TakePicFiducialMarks_ETROC(etroc_images, robot3D)
     assembly_parts_position.update(etroc_pos)
-    # # Take pictures of the fiducial marks in the PCB, compute each PCB placement
-    # pcb_images = [
-    #     "FiducialMark/PCB_1X_353.350Y_-374.330Z_173.659RZ_107.040J1_-20.703J2_-69.801J3_173.659J4_-16.536.png",
-    #     "FiducialMark/PCB_1X_353.630Y_-335.130Z_173.846RZ_107.020J1_-14.563J2_-78.820J3_173.846J4_-13.637.png",
-    #     "FiducialMark/PCB_1X_406.730Y_-375.120Z_173.849RZ_107.030J1_-21.824J2_-55.182J3_173.849J4_-30.024.png",
-    #     "FiducialMark/PCB_1X_407.120Y_-335.970Z_174.160RZ_107.050J1_-15.162J2_-65.160J3_174.160J4_-26.728.png"
-    # ]
-    # pcb_pos = TakePicFiducialMarks_PCB(pcb_images, robot3D)
-    # assembly_parts_position.update(pcb_pos)
+    # Take pictures of the fiducial marks in the PCB, compute each PCB placement
+    pcb_images = [
+        "FiducialMark/PCB_1X_353.350Y_-374.330Z_173.659RZ_107.040J1_-20.703J2_-69.801J3_173.659J4_-16.536.png",
+        "FiducialMark/PCB_1X_353.630Y_-335.130Z_173.846RZ_107.020J1_-14.563J2_-78.820J3_173.846J4_-13.637.png",
+        "FiducialMark/PCB_1X_406.730Y_-375.120Z_173.849RZ_107.030J1_-21.824J2_-55.182J3_173.849J4_-30.024.png",
+        "FiducialMark/PCB_1X_407.120Y_-335.970Z_174.160RZ_107.050J1_-15.162J2_-65.160J3_174.160J4_-26.728.png"
+    ]
+    pcb_pos = TakePicFiducialMarks_PCB(pcb_images, robot3D)
+    assembly_parts_position.update(pcb_pos)
+    print(assembly_parts_position)

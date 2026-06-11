@@ -18,6 +18,10 @@ class RobotController:
 
     ##############################################################################
     def __init__(self, device, bauds, debug = False):
+        """
+        All angular coordinates in deg
+        All distances in mm
+        """
 
         #Technical stuff
         self.HEADER = '\033[95m'
@@ -292,6 +296,10 @@ class RobotController:
 
     ##############################################################################
     def moveJ(self, j1, j2, j3, j4):
+        """
+        Expects angular coordinates in deg!!!
+
+        """
 
         j1s = str(j1)
         j2s = str(j2)

@@ -65,6 +65,10 @@ class Robot:
 
     ######### Move the robot ###########################################
     def JMoveRobotTo(self, pos):
+        """
+        Expect angular positions in radians!!
+
+        """
         
         #Update the J coordinates
         self.J1 = pos[0] 
@@ -118,14 +122,14 @@ class Robot:
         # logging.info(f'Camera ux vector: ({self.camera.cartesianpos.ux[0]}, {self.camera.cartesianpos.ux[1]}, {self.camera.cartesianpos.ux[2]})')
         # logging.info(f'Camera uy vector: ({self.camera.cartesianpos.uy[0]}, {self.camera.cartesianpos.uy[1]}, {self.camera.cartesianpos.uy[2]})')
         # logging.info(f'Camera uz vector: ({self.camera.cartesianpos.uz[0]}, {self.camera.cartesianpos.uz[1]}, {self.camera.cartesianpos.uz[2]})')
-        p1 = [1.0 ,  1.0]
-        p2 = [1.0 , -1.0]
-        p3 = [-1.0, -1.0]
-        p4 = [-1.0,  1.0]
-        self.frame[0] = self.cameraProjectionToPoint3D(p1)
-        self.frame[1] = self.cameraProjectionToPoint3D(p2)
-        self.frame[2] = self.cameraProjectionToPoint3D(p3)
-        self.frame[3] = self.cameraProjectionToPoint3D(p4)
+        # p1 = [1.0 ,  1.0]
+        # p2 = [1.0 , -1.0]
+        # p3 = [-1.0, -1.0]
+        # p4 = [-1.0,  1.0]
+        # self.frame[0] = self.cameraProjectionToPoint3D(p1)
+        # self.frame[1] = self.cameraProjectionToPoint3D(p2)
+        # self.frame[2] = self.cameraProjectionToPoint3D(p3)
+        # self.frame[3] = self.cameraProjectionToPoint3D(p4)
 
 
     ######### Set Check if a point is within the frame##################  
@@ -264,16 +268,12 @@ class Robot:
        
         p = np.copy(p_)
         
-        print(f"Point: {p}")
         corrCameraZ = np.copy(self.camera.r)
-        print(f"corrCamera =  {corrCameraZ}")
         corrCameraZ[2] = self.Z0 - self.camera.r[2]
-        print(f"corrCamera =  {corrCameraZ}")
         
         vx = ((p[0]-self.camera.npixelx/2.0)/self.camera.cx) * self.camera.ux
         vy = ((-p[1]+self.camera.npixely/2.0)/self.camera.cy) * self.camera.uy
         vz = corrCameraZ + self.camera.focaldistance * self.camera.uz
-        print(f"vx = {vx}, vy = {vy}, vz = {vz}") 
 
         pointInFocalPlane = vz + vx + vy
         s = corrCameraZ - pointInFocalPlane
@@ -283,7 +283,6 @@ class Robot:
         l = (-self.camera.focusdistance) / sdotuz
         #p = self.camera.r + l * s
         p = corrCameraZ + l * s
-        print(f"Result = {p[0]}, {p[1]}, {self.Z0-p[2]}")
         return np.asarray([p[0], p[1], self.Z0 - p[2]])
 
     

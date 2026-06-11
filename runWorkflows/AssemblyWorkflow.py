@@ -84,9 +84,10 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller):
                 etlcontroller.changeZ(focus_z)
                 # Take pic
                 position_xyzrz = etlcontroller.getPositionXYZ()
-                position_j1j2j3j4 = etlcontroller.getPositionJ1J2J3()
+                position_j1j2j3j4_rad = etlcontroller.getPositionJ1J2J3_rad()
+                position_j1j2j3j4_deg = etlcontroller.getPositionJ1J2J3_deg()
                 x_r, y_r, z_r, rz_r = position_xyzrz
-                j1_r, j2_r, j3_r, j4_r = position_j1j2j3j4
+                j1_r, j2_r, j3_r, j4_r = position_j1j2j3j4_deg
                 image_name = f"FiducialMark/ETROC_{i_module}{i_etroc}X_{x_r:.3f}Y_{y_r:.3f}Z_{z_r:.3f}RZ_{rz_r:.3f}J1_{j1_r:.3f}J2_{j2_r:.3f}J3_{j3_r:.3f}J4_{j4_r:.3f}.png"
                 etlcontroller.camera.changeFileName(image_name)
                 etlcontroller.camera.takePic()
@@ -95,11 +96,10 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller):
                 x_pic, y_pic, valid = p.fit()
                 # Change from pixels to Robot Coordinates
                 # XXX - I need to update robot simulation position
-                etlcontroller.robot.JMoveRobotTo(position_j1j2j3j4)
+                etlcontroller.robot.JMoveRobotTo(position_j1j2j3j4_rad)
                 x_reco_robot, y_reco_robot, z_reco_robot = etlcontroller.robot.cameraProjectionToPoint3D([x_pic, y_pic])
                 print(f"Reconstructed position = {x_reco_robot}, {y_reco_robot}")
                 corners.append([x_reco_robot, y_reco_robot])
-                time.sleep(5)
 
             # Compute center position of the ETROC
             corners = np.asarray(corners)
@@ -150,9 +150,10 @@ def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller):
             etlcontroller.changeZ(focus_z)
             # Take pic
             position_xyzrz = etlcontroller.getPositionXYZ()
-            position_j1j2j3j4 = etlcontroller.getPositionJ1J2J3()
+            position_j1j2j3j4_rad = etlcontroller.getPositionJ1J2J3_rad()
+            position_j1j2j3j4_deg = etlcontroller.getPositionJ1J2J3_deg()
             x_r, y_r, z_r, rz_r = position_xyzrz
-            j1_r, j2_r, j3_r, j4_r = position_j1j2j3j4
+            j1_r, j2_r, j3_r, j4_r = position_j1j2j3j4_deg
             image_name = f"FiducialMark/PCB_{i_module}X_{x_r:.3f}Y_{y_r:.3f}Z_{z_r:.3f}RZ_{rz_r:.3f}J1_{j1_r:.3f}J2_{j2_r:.3f}J3_{j3_r:.3f}J4_{j4_r:.3f}.png"
             etlcontroller.camera.changeFileName(image_name)
             etlcontroller.camera.takePic()
@@ -160,8 +161,7 @@ def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller):
             p = ProcessFiducialPoint.ProcessFiducialPoint(image_name, is_ETROC=False)
             x_pic, y_pic, valid = p.fit()
             # Change from pixels to Robot Coordinates
-            # XXX - I need to update robot simulation position
-            etlcontroller.robot.JMoveRobotTo(position_j1j2j3j4)
+            etlcontroller.robot.JMoveRobotTo(position_j1j2j3j4_rad)
             x_reco_robot, y_reco_robot, z_reco_robot = etlcontroller.robot.cameraProjectionToPoint3D([x_pic, y_pic])
             print(f"Reconstructed position = {x_reco_robot}, {y_reco_robot}")
             corners.append([x_reco_robot, y_reco_robot])

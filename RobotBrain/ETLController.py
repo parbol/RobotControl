@@ -19,6 +19,10 @@ class ETLController:
 
     ##############################################################################
     def __init__(self, device, bauds, camera, robot3D, debug=False):
+        """
+        All angular coordinates are in deg
+
+        """
 
         self.HEADER = '\033[95m'
         self.OKBLUE = '\033[94m'
@@ -569,10 +573,18 @@ class ETLController:
         self.robotcontroller.askStatus()
         self.updateStatus()
         return self.position_xyzrz
-    def getPositionJ1J2J3(self):
+    def getPositionJ1J2J3_deg(self):
         self.robotcontroller.askStatus()
         self.updateStatus()
         return self.position_j1j2j3j4
+    def getPositionJ1J2J3_rad(self):
+        self.robotcontroller.askStatus()
+        self.updateStatus()
+        j1 = np.radians(self.position_j1j2j3j4[0])
+        j2 = np.radians(self.position_j1j2j3j4[1])
+        j3 = self.position_j1j2j3j4[2] # This is z in mm
+        j1 = np.radians(self.position_j1j2j3j4[3])
+        return [j1, j2, j3, j4]
     def getValveStatus(self):
         self.robotcontroller.askStatus()
         self.updateStatus()
