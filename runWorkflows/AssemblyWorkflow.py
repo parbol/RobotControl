@@ -248,5 +248,7 @@ if __name__ == "__main__":
     # Now 4 ETROCs are in each PCB
     # Put the cover plate on top but I do not have any fiducial mark
 
+    # Release picker tool if not already
+    etlcontroller.releasePickerTool()
     # Close connection
     etlcontroller.exit()

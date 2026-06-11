@@ -13,6 +13,7 @@ import sys
 import os
 import math
 import re
+import numpy as np
 from RobotBrain.RobotController import RobotController
 
 class ETLController:
@@ -376,19 +377,26 @@ class ETLController:
         # Step in RZ to correct rotation
         self.stepRZ(part_rotation_rz)
         self.updateStatus()
+        
+        is_picked = False
+        while not is_picked:
+            self.changeZ(z)
+            # Open Tool valves
+            self.printLog("Openning tool valves")
+            valves = self.nameToValves("TOOL", True)
+            self.robotcontroller.setValves(valves)
+            time.sleep(1)
+            self.printLog(f"Clossing {part_name} valves")
+            valves = self.nameToValves(part_name, False)
+            self.robotcontroller.setValves(valves)
+            time.sleep(1)
 
-        self.changeZ(z)
-        # Open Tool valves
-        self.printLog("Openning tool valves")
-        valves = self.nameToValves("Tool", True)
-        self.robotcontroller.setValves(valves)
-        time.sleep(1)
-        self.printLog(f"Clossing {part_name} valves")
-        valves = self.nameToValves(part_name, False)
-        self.robotcontroller.setValves(valves)
+            self.updateStatus()
+            self.changeZ(self.safe_z)
 
-        self.updateStatus()
-        self.changeZ(self.safe_z)
+            result = input("Do you need to repeat the picking up process? (y/n)")
+            if result.upper() == "N":
+                is_picked = True
         return True
 
     ##############################################################################
@@ -411,9 +419,12 @@ class ETLController:
         # Step in RZ to correct rotation
         self.stepRZ(part_rotation_rz)
         self.updateStatus()
+        # Go down
+        self.changeZ(z)
+        self.updateStatus()
         # Close Tool valves
         self.printLog("Closing tool valves")
-        valves = self.nameToValves("Tool", False)
+        valves = self.nameToValves("TOOL", False)
         self.robotcontroller.setValves(valves)
         time.sleep(1)
         # Move up
@@ -428,7 +439,7 @@ class ETLController:
         self.updateStatus()
         valves = list(self.valves)
 
-        for valve in self.valve_map[name]:
+        for valve in self.valve_map[name.upper()]:
             valves[valve] = "1" if to_open else "0"
 
         return "".join(valves)
@@ -583,7 +594,7 @@ class ETLController:
         j1 = np.radians(self.position_j1j2j3j4[0])
         j2 = np.radians(self.position_j1j2j3j4[1])
         j3 = self.position_j1j2j3j4[2] # This is z in mm
-        j1 = np.radians(self.position_j1j2j3j4[3])
+        j4 = np.radians(self.position_j1j2j3j4[3])
         return [j1, j2, j3, j4]
     def getValveStatus(self):
         self.robotcontroller.askStatus()

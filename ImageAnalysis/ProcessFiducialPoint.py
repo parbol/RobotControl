@@ -32,7 +32,7 @@ class ProcessFiducialPoint:
         blurred = cv2.GaussianBlur(gray, (5,5), 2)
         
         #Getting contours
-        _, thresh = cv2.threshold(blurred, 50, 255, cv2.THRESH_BINARY_INV)
+        _, thresh = cv2.threshold(blurred, 40, 255, cv2.THRESH_BINARY_INV)
         contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
         contourssorted = sorted(contours, key=cv2.contourArea, reverse=True)
@@ -62,7 +62,7 @@ class ProcessFiducialPoint:
         blurred = cv2.GaussianBlur(gray, (5,5), 2)
         
         #Getting contours
-        _, thresh = cv2.threshold(blurred, 50, 255, cv2.THRESH_BINARY_INV)
+        _, thresh = cv2.threshold(blurred, 150, 255, cv2.THRESH_BINARY_INV)
         contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
         contourssorted = sorted(contours, key=cv2.contourArea, reverse=True)
@@ -78,7 +78,11 @@ class ProcessFiducialPoint:
                 break
         contoursselected = contourssorted[i:i+4]
 
-        return contoursselected, contourssorted, blurred, thresh
+        if self.checkConsistency(contoursselected):
+            return contoursselected, contourssorted, blurred, thresh
+        else:
+            return contourssorted[1:2], contourssorted, blurred, thresh
+
 
     def fit(self):
         # Get contours
@@ -111,7 +115,7 @@ class ProcessFiducialPoint:
 
         _is_first_contour = True
         for i, c in enumerate(contoursselected):
-            # print(cv2.contourArea(c))
+            # print(c, cv2.contourArea(c))
             c = c.squeeze()
             if _is_first_contour:
                 axs[1].plot(c[:,0], c[:,1], 'g', linewidth=2, label="Selected contours")
@@ -120,6 +124,7 @@ class ProcessFiducialPoint:
                 axs[1].plot(c[:,0], c[:,1], 'g', linewidth=2)
         axs[1].legend()
         
+        print("Second check")
         valid = self.checkConsistency(contoursselected)
         
         if not valid:
@@ -127,25 +132,42 @@ class ProcessFiducialPoint:
             self.printError('Pattern recognition unsuccessfull')
             return 0, 0, False
 
-        arrayx, arrayy, x, y, d, valid = self.estimateDistances(contoursselected)
+        if len(contoursselected) == 4:
+            arrayx, arrayy, x, y, d, valid = self.estimateDistances(contoursselected)
+        elif len(contoursselected) == 1:
+            M = cv2.moments(contoursselected[0])
+            x = int(M['m10']/M['m00'])
+            y = int(M['m01']/M['m00'])
+
         
         # Drawing final
         circle = plt.Circle((x,y), 10, color='green', fill=True)
         axs[2].add_patch(circle)
         axs[2].imshow(gray, cmap='gray')
         axs[2].set_title('Final estimate')
-        plt.plot(arrayx, arrayy, color='red')
+        if len(contoursselected) == 4:
+            plt.plot(arrayx, arrayy, color='red')
         plt.savefig(f"Fit_{self.imageName}")
         return x, y, valid
 
     ##############################################################################
     def checkConsistency(self, c):
-        for i in range(len(c)):
-            area = cv2.contourArea(c[i])
-            if area < 15000.0 or area > 35000.0:
-                print(f"Not right area {area}")
+        if len(c) == 4:
+            for i in range(len(c)):
+                area = cv2.contourArea(c[i])
+                if area < 15000.0 or area > 35000.0:
+                    print(f"Not right area {area}")
+                    return False
+            return True
+        elif len(c) == 1:
+            area = cv2.contourArea(c[0])
+            if area < 300000 and area > 35000:
+                return True
+            else: 
                 return False
-        return True
+        else:
+            return False
+
 
     ##############################################################################
     
