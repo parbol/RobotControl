@@ -40,6 +40,11 @@ if __name__ == "__main__":
         itemlist = pickle.load(fp)
 
 
+    endog, exdog = prepareInput(itemlist, 36.0)
+
+    print(endog)
+    sys.exit()
+
     caliHandler = CalibrationHandler()
     cali = caliHandler.getLastCalibration()
     #cali['cameraX'] = -1.100968
@@ -49,7 +54,6 @@ if __name__ == "__main__":
     cali['cameraY'] = -95.37271516
     cali['cameraPsi'] = 1.904899668752405
 
-    endog, exdog = prepareInput(itemlist, cali['focusdistance'])
    
     #Table
     table = Table(0.01, 0.0)
@@ -61,7 +65,7 @@ if __name__ == "__main__":
     #mode 3 is for debugging the angle
     #mode 4 is for debugging the full table
     
-    mode = 4
+    mode = 3
     
     
     ##################################Debug 1#################################
@@ -152,7 +156,7 @@ if __name__ == "__main__":
     
     if mode == 3:
         
-        for i in range(1):    
+        for ppoint in range(len(endog)):    
             
             chi2 = 0.0
             angle = 2.0*np.pi/50.0 * i
@@ -187,6 +191,7 @@ if __name__ == "__main__":
             #print('Posición nominal del punto:', endog[ppoint])
 
             nominalPosition1 = np.copy(endog[ppoint])
+            print(nominalPosition1)
             nominalPosition2 = np.copy(endog[ppoint])
             nominalPosition2[1] = nominalPosition2[1] - 0.1
             nominalPosition3 = np.copy(endog[ppoint])
