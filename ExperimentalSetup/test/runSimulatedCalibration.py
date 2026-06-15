@@ -36,34 +36,27 @@ def getMeasurements(N, sigmax, sigmay, robot, p):
     valid, J1, J2, Z = robot.fromCartesianToInner(p)
     if not valid:
         return []
-    print('Cartesian point is p', p)
-    centerJ = [J1, J2, Z, 0.0]
+    centerJ = [J1, J2, Z-36.0, 0.0]
     robot.JMoveRobotTo(centerJ)
-    print('The robot is centered at the point:', robot.position)
     measurements = []
     for i in range(N):
         Jz = i * 2.0 * np.pi / N
         newPointJ = np.copy(centerJ)
         newPointJ[3] = Jz
         robot.JMoveRobotTo(newPointJ)
-        print('The robot continues at the point', robot.position)
-        print('The camera is now in position:', robot.camera.r)
+      
         cameraPos = np.copy(robot.camera.r)
-        phiCamera = np.atan2(robot.camera.r0[1], robot.camera.r0[1])
+        phiCamera = np.atan2(robot.camera.r0[1], robot.camera.r0[0])
         #deltaX = np.random.uniform(-1.4, 1.4)
         #deltaY = np.random.uniform(-1.4, 1.4)
         #cameraPos[0] = cameraPos[0] + deltaX
         #cameraPos[1] = cameraPos[1] + deltaY
         valid, J1, J2, Z = robot.fromCartesianToInner(cameraPos)
-        if not valid:
-            continue
-        newCenterJ = [J1, J2, Z, Jz + np.pi + phiCamera]
+        newCenterJ = [J1, J2, Z, np.pi]
         robot.JMoveRobotTo(newCenterJ)
-        print('The robot is now were the camera used to be', robot.position)
-        print('The camera is finally in', robot.camera.r)
-
+        
         xn, yn = robot.point3DToCameraProjection(p)
-        measurements.append([newCenterJ[0], newCenterJ[1], newCenterJ[2], newCenterJ[3], xn, yn])
+        measurements.append([newCenterJ[0].item()*180.0/np.pi, newCenterJ[1].item()*180.0/np.pi, newCenterJ[2].item(), newCenterJ[3]*180.0/np.pi, xn.item(), yn.item()])
 
     return measurements
 
@@ -86,8 +79,8 @@ if __name__ == "__main__":
   
     nominalPositions = []
     for p in endog:
-        #p2 = p.copy()
-        #p2[1] = -p2[1]
+        p2 = p.copy()
+        p2[1] = -p2[1]
         nominalPositions.append(p)
         #nominalPositions.append(p2)
 
@@ -102,33 +95,33 @@ if __name__ == "__main__":
     # Generate the robot
     robot = Robot(380.0, 240.0, 360, None, camera)
     
-    endog = []
-    exdog = []
+    endog2 = []
+    exdog2 = []
     for p in nominalPositions:
 
-        measurements = getMeasurements(5, 1.0, 1.0, robot, np.asarray(p)) 
-        print(measurements)
-        exdog.extend(measurements)
-        endog.extend(p)       
+        measurements = getMeasurements(1, 1.0, 1.0, robot, np.asarray(p)) 
+        exdog2.extend(measurements)
+        for j in range(len(measurements)):
+            endog2.extend([p])
         
-        
+    print(endog2)
     # Generate the camera  
-        camera2 = Camera(x = 0.0, y = 0.0,
-                        z = 0.0, psi = 0.0,
-                        theta = 0.0, phi = 0.0,
-                        cx = -256.0, cy = -256.0,
-                        focaldistance = 200.0,
-                        focusdistance = 36.0)
+    camera2 = Camera(x = 0.0, y = 0.0,
+                    z = 0.0, psi = 0.0,
+                    theta = 0.0, phi = 0.0,
+                    cx = -256.0, cy = -256.0,
+                    focaldistance = 200.0,
+                    focusdistance = 36.0)
 
-        # Generate the robot
-        robot2 = Robot(380.0, 240.0, 360.0, None, camera2)
+    # Generate the robot
+    robot2 = Robot(380.0, 240.0, 360.0, None, camera2)
         
-        #Likelihood
-        lhood = CameraLikelihood(endog, exdog, robot2)
-        res = lhood.fit()
-        chi2 = lhood.check()
-        print("Parameters:", res.params)
-        print("Standard errors:", res.bse)
-        print("Initial chi2:", lhood.chi2k[0], "Final chi2", chi2)
-        print('Mean distance:', np.sqrt(chi2/len(exdog)), 'mm')
+    #Likelihood
+    lhood = CameraLikelihood(endog2, exdog2, robot2)
+    res = lhood.fit()
+    chi2 = lhood.check()
+    print("Parameters:", res.params)
+    print("Standard errors:", res.bse)
+    print("Initial chi2:", lhood.chi2k[0], "Final chi2", chi2)
+    print('Mean distance:', np.sqrt(chi2/len(exdog)), 'mm')
       
