@@ -21,32 +21,9 @@ if __name__ == "__main__":
     # The table
     table = Table(0.01, 0.0)
     # The physical camera
-    camera = Camera(x = 2.0, y = 0.0, z = -27.0, psi = 0.0, theta = 0.0, phi = 0.0, cx = 0.5, cy = 0.5, focaldistance = 10, sigmaCamera = 0.001)
-    # The graphs
-    fig = plt.figure(figsize = (16, 8), layout="constrained")
-    gs0 = fig.add_gridspec(1, 2, width_ratios=[2, 1])
-    ax1 = fig.add_subplot(gs0[0], projection = '3d')
-    gs1 = gs0[1].subgridspec(2,1)
-    ax2 = fig.add_subplot(gs1[0])
-    ax3 = fig.add_subplot(gs1[1])
-    ax1.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    ax1.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    ax1.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    ax1.set_xlabel('x [cm]')
-    ax1.set_ylabel('y [cm]')
-    ax1.set_zlabel('z [cm]')
-    ax2.set_xlabel('x [cm]')
-    ax2.set_ylabel('y [cm]')
-    ax3.set_xlabel('z [cm]')
-    ax3.set_ylabel('y [cm]')
-    ax1.axes.set_xlim3d(left=-70, right=70.0)
-    ax1.axes.set_ylim3d(bottom=-70, top=70.0)
-    ax2.axes.set_xlim((-40.0, 70.0))
-    ax2.axes.set_ylim((-70.0, 40.0))
-    ax3.axes.set_xlim((-1.0, 1.0))
-    ax3.axes.set_ylim((-1.0, 1.0))
+    camera = Camera(x = 2.0, y = 0.0, z = -27.0, psi = 0.0, theta = 0.0, phi = 0.0, cx = 0.5, cy = 0.5, focaldistance = 10, focusdistance = 0.001)
     # The 3D model of the robot
-    robot3D = Robot(50.0, 30.0, 30.0, 40, table, camera, fig, ax1, ax2, ax3)
+    robot3D = Robot(50.0, 30.0, 40, table, camera)
 
     # init_hole_pos = [176.73, -468.21, 180, 28.06]
     # step_x = 1.2
@@ -59,51 +36,45 @@ if __name__ == "__main__":
     # etlcontroller.camera.set_exposure(0.00025)
     
     # TODO - Define glue plate points position
-    # init_pos = [176.73, -485.67, 180, 28.08]
-     # Do 10 photos in the same pos
-    # etlcontroller.safeMovement(init_pos[0], init_pos[1], init_pos[2], init_pos[3])
-    # summary, focus_z, fraction = etlcontroller.fullAutoFocus(127, is_double=True)   
-    # for i in range(10):
-    #     etlcontroller.changeZ(180)
-    #     etlcontroller.changeZ(focus_z)
-    #     position_xyzrz = etlcontroller.getPositionXYZ()
-    #     position_j1j2j3j4 = etlcontroller.getPositionJ1J2J3()
-    #     x, y, z, rz = position_xyzrz
-    #     j1, j2, j3, j4 = position_j1j2j3j4
-    #     etlcontroller.camera.changeFileName(f"GluePlate/RepetitivityTest/picture_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}_iter{i}.png")
-    #     etlcontroller.camera.takePic()
-    # Check dead time --> z_range = 0
-    # summary, focus_z, fraction = etlcontroller.fullAutoFocus(127, is_double=False)   
+    init_positions = [# [176.73, -485.67, 180, 28.08], # Old position not working now
+                      [175.80, -485.67, 180, 28.08],
+                      [222.79, -540.64, 180, 72.53],
+                      [130.21, -473.97, 180, 00.02],
+                      [63.45, -502.50, 180, -44.50],
+                      [35.21, -563.70, 180, -85.42],
+                      [43.37, -609.62, 180, -113.62]]
 
-    # n_holes_x = 10
-    # n_holes_y = 10
-    # step_x = 12
-    # step_y = 12
-    # 
-    # etlcontroller.safeMovement(init_pos[0], init_pos[1], init_pos[2], init_pos[3])
-    # for ix in range(0, n_holes_x):
-    #     for iy in range(n_holes_y):
-    #         x_hole = init_pos[0] - ix*step_x
-    #         y_hole = init_pos[1] + iy*step_y
+    n_holes_x = 10
+    n_holes_y = 3
+    step_x = 12
+    step_y = 12
+     
+    for init_pos in init_positions:
+        print(init_pos)
+        etlcontroller.safeMovement(init_pos[0], init_pos[1], init_pos[2], init_pos[3])
+        for ix in range(0, n_holes_x):
+            for iy in range(n_holes_y):
+                x_hole = init_pos[0] - ix*step_x
+                y_hole = init_pos[1] + iy*step_y
 
-    #         etlcontroller.safeMovement(x_hole, y_hole, init_pos[2], init_pos[3])
-    #         summary, focus_z, fraction = etlcontroller.fullAutoFocus(127, is_double=True)   
-    #         etlcontroller.changeZ(focus_z)
-    #         # Take pic
-    #         position_xyzrz = etlcontroller.getPositionXYZ()
-    #         position_j1j2j3j4 = etlcontroller.getPositionJ1J2J3()
-    #         x, y, z, rz = position_xyzrz
-    #         j1, j2, j3, j4 = position_j1j2j3j4
-    #         etlcontroller.camera.changeFileName(f"GluePlate/DoubleFocus_Second/picture_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png")
-    #         etlcontroller.camera.takePic()
+                etlcontroller.safeMovement(x_hole, y_hole, init_pos[2], init_pos[3])
+                summary, focus_z, fraction = etlcontroller.fullAutoFocus(127, is_double=True)   
+                etlcontroller.changeZ(focus_z)
+                # Take pic
+                position_xyzrz = etlcontroller.getPositionXYZ()
+                position_j1j2j3j4 = etlcontroller.getPositionJ1J2J3_deg()
+                x, y, z, rz = position_xyzrz
+                j1, j2, j3, j4 = position_j1j2j3j4
+                etlcontroller.camera.changeFileName(f"GluePlate/Final_Calibration/picture_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png")
+                etlcontroller.camera.takePic()
     
-    # Photo on the ruller
-    ruller_pos = [-21.91, -437.75, 180, 0.02]
-    etlcontroller.safeMovement(ruller_pos[0], ruller_pos[1], ruller_pos[2], ruller_pos[3])
-    summary, focus_z, fraction = etlcontroller.fullAutoFocus(129, is_double=True)   
-    etlcontroller.changeZ(focus_z)
-    # Take pic
-    etlcontroller.camera.changeFileName(f"RullerPic/picture_002_rz0.02.png")
-    etlcontroller.camera.takePic()
+    # # Photo on the ruller
+    # ruller_pos = [-21.91, -437.75, 180, 0.02]
+    # etlcontroller.safeMovement(ruller_pos[0], ruller_pos[1], ruller_pos[2], ruller_pos[3])
+    # summary, focus_z, fraction = etlcontroller.fullAutoFocus(129, is_double=True)   
+    # etlcontroller.changeZ(focus_z)
+    # # Take pic
+    # etlcontroller.camera.changeFileName(f"RullerPic/picture_002_rz0.02.png")
+    # etlcontroller.camera.takePic()
 
     etlcontroller.exit()
