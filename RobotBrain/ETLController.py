@@ -389,7 +389,7 @@ class ETLController:
             self.printLog(f"Clossing {part_name} valves")
             valves = self.nameToValves(part_name, False)
             self.robotcontroller.setValves(valves)
-            time.sleep(1)
+            time.sleep(2)
 
             self.updateStatus()
             self.changeZ(self.safe_z)
@@ -426,7 +426,7 @@ class ETLController:
         self.printLog("Closing tool valves")
         valves = self.nameToValves("TOOL", False)
         self.robotcontroller.setValves(valves)
-        time.sleep(1)
+        time.sleep(2)
         # Move up
         self.updateStatus()
         self.changeZ(self.safe_z)
