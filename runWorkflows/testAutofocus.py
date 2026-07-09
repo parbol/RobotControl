@@ -65,7 +65,7 @@ if __name__ == "__main__":
                 position_j1j2j3j4 = etlcontroller.getPositionJ1J2J3_deg()
                 x, y, z, rz = position_xyzrz
                 j1, j2, j3, j4 = position_j1j2j3j4
-                etlcontroller.camera.changeFileName(f"GluePlate/Final_Calibration/picture_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png")
+                etlcontroller.camera.changeFileName(f"GluePlate/Final_Calibration/picture_col_{ix}_row{iy}_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png")
                 etlcontroller.camera.takePic()
     
     # # Photo on the ruller
