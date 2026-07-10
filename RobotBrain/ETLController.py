@@ -61,13 +61,14 @@ class ETLController:
                                          2: [-98, -78, self.safe_z, 107],
                                          3: [-116, -115, self.safe_z, 107],
                                          4: [-170, -110, self.safe_z, 80],
+                                         5: [-58, -90, self.safe_z, 107] # Glue plate XXX Check J4
                                         }
         # Plate central position in cartesian coordinates, similar to previous but different rounding
-        # TODO check when does Y change sign
         self.plate_position_xyzrz = {1: [292, -417, self.safe_z, 107], 
                                      2: [-292, -390, self.safe_z, 107],
                                      3: [-319, -155, self.safe_z, 107],
-                                     4: [-332, 174, self.safe_z, -161]
+                                     4: [-332, 174, self.safe_z, -161],
+                                     5: [0, -450, self.safe_z, None], # Glue plate rz None cause I dont care
                                      }
        
         # Limits to avoid collision
@@ -295,18 +296,23 @@ class ETLController:
         """
         self.updateStatus()
         self.printLog(f"Moving rZ from {self.position_xyzrz[3]} to {rz}")
-        if self.position_xyzrz[3] < 0:
-            # Move to +180 or 0, the closest one then move to the final position
-            safe_rz = 0 if abs(self.position_xyzrz[3] - 0) <= abs(self.position_xyzrz[3]+180) else 180
-            self.printLog(f"Initial rZ is negative --> going to {safe_rz}")
-            self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], safe_rz)
-            self.updateStatus()
-        if rz < 0:
-            # Move to 0 or +180, the closest one, then to the final one
-            safe_rz = 0 if abs(rz - 0) <= abs(rz+180) else 180
-            self.printLog(f"Final rZ is negative --> going to {safe_rz}")
-            self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], safe_rz)
-            self.updateStatus()
+
+        if abs(self.position_xyzrz[3]-rz)<1e-3:
+            self.printLog("Skipping safe rotation, close angles")
+        
+        else:
+            if self.position_xyzrz[3] < 0:
+                # Move to +180 or 0, the closest one then move to the final position
+                safe_rz = 0 if abs(self.position_xyzrz[3] - 0) <= abs(self.position_xyzrz[3]+180) else 180
+                self.printLog(f"Initial rZ is negative --> going to {safe_rz}")
+                self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], safe_rz)
+                self.updateStatus()
+            if rz < 0:
+                # Move to 0 or +180, the closest one, then to the final one
+                safe_rz = 0 if abs(rz - 0) <= abs(rz+180) else 180
+                self.printLog(f"Final rZ is negative --> going to {safe_rz}")
+                self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], safe_rz)
+                self.updateStatus()
 
         # Final movement
         self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], rz)
