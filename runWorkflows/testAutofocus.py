@@ -42,22 +42,27 @@ if __name__ == "__main__":
                       [130.21, -473.97, 180, 00.02],
                       [63.45, -502.50, 180, -44.50],
                       [35.21, -563.70, 180, -85.42],
-                      [43.37, -609.62, 180, -113.62]]
+                      # [43.37, -609.62, 180, -113.62]
+                      ]
 
     n_holes_x = 10
     n_holes_y = 3
     step_x = 12
     step_y = 12
      
-    for init_pos in init_positions:
+    for i, init_pos in enumerate(init_positions):
         print(init_pos)
+        if i == 0:
+            init_x = 8
+        else:
+            0
         etlcontroller.safeMovement(init_pos[0], init_pos[1], init_pos[2], init_pos[3])
-        for ix in range(0, n_holes_x):
+        for ix in range(init_x, n_holes_x):
             for iy in range(n_holes_y):
                 x_hole = init_pos[0] - ix*step_x
                 y_hole = init_pos[1] + iy*step_y
 
-                etlcontroller.safeMovement(x_hole, y_hole, init_pos[2], init_pos[3])
+                etlcontroller.safeMovement(x_hole, y_hole, init_pos[2], None)
                 summary, focus_z, fraction = etlcontroller.fullAutoFocus(127, is_double=True)   
                 etlcontroller.changeZ(focus_z)
                 # Take pic
@@ -65,7 +70,7 @@ if __name__ == "__main__":
                 position_j1j2j3j4 = etlcontroller.getPositionJ1J2J3_deg()
                 x, y, z, rz = position_xyzrz
                 j1, j2, j3, j4 = position_j1j2j3j4
-                etlcontroller.camera.changeFileName(f"GluePlate/Final_Calibration/picture_col_{ix}_row{iy}_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png")
+                etlcontroller.camera.changeFileName(f"GluePlate/Final_Calibration2/picture_col_{ix}_row{iy}_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png")
                 etlcontroller.camera.takePic()
     
     # # Photo on the ruller

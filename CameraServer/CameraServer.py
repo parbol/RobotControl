@@ -178,6 +178,8 @@ class CameraServer:
         elif data.startswith('ESTIMATE FOCUS FRACTION'):
             self.printLog('Client says: ' + data)
             return self.handle_estimateFocusFraction(data)
+        elif data.startswith('RECONNECT'):
+            return self.handle_reconnect()
         else:
             self.printError("Unexpected command received")
             return False

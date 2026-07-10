@@ -512,12 +512,8 @@ class ETLController:
             start_z = z - z_range / 2
             end_z   = z + z_range / 2
 
-        self.changeZ(start_z)
 
         # init camera autofocus_acquisition
-        self.printLog("Starting autofocus")
-        if not self.camera.start_autofocusAcquisition():
-            raise RuntimeError("Could not start autofocus acquisition")
 
         # move to position but z = position("z")-z_range/2 and speed = z_speed
         stored_speed = self.getVelocity()
@@ -525,14 +521,35 @@ class ETLController:
         stored_acceleration = self.getAcceleration()
         self.setAcceleration(100)
 
-        summary = None
-        try:
-            self.changeZ(end_z)
-        # stop autofocus_acquisition and get summary
-        finally:
-            summary = self.camera.stop_autofocusAcquisition()
+        max_retries = 3
+        for attemp in range(max_retries):
+            self.changeZ(start_z)
+            
+            self.printLog("Starting autofocus")
+            if not self.camera.start_autofocusAcquisition():
+                raise RuntimeError("Could not start autofocus acquisition")
+            
+            summary = None
+            try:
+                self.changeZ(end_z)
+            # stop autofocus_acquisition and get summary
+            finally:
+                summary = self.camera.stop_autofocusAcquisition()
 
-        fraction = self.camera.estimate_focusFraction()
+            fraction = self.camera.estimate_focusFraction()
+
+            if fraction is not None:
+                break
+            else:
+                self.printWarning(f"Autofocus failed at attemp {attemp}")
+            # for i in range(3):
+            #     if self.camera.handshake():
+            #         break
+            # else: 
+            #     self.printError("Loose connection to camera check cable")
+        else:
+            self.printError("Autofocus failed after 3 attemps")
+
         if up_down:
             focus_z = start_z - fraction * z_range
         else:
