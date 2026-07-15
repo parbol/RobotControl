@@ -7,6 +7,7 @@ from ExperimentalSetup.Camera import Camera
 from ExperimentalSetup.Robot import Robot
 from ExperimentalSetup.Table import Table
 import numpy as np
+import sys
 
 if __name__ == "__main__":
     
@@ -33,38 +34,40 @@ if __name__ == "__main__":
     
     # Initialize Robot
     etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, False)
-    # etlcontroller.camera.set_exposure(0.00025)
+    etlcontroller.camera.set_exposure(0.025)
     
     # TODO - Define glue plate points position
     init_positions = [# [176.73, -485.67, 180, 28.08], # Old position not working now
-                     #  [175.80, -485.67, 180, 28.08],
-                     #  [222.79, -540.64, 180, 72.53],
-                     # [130.61, -473.97, 180, 00.02],
-                      [63.45, -502.00, 180, -44.50],
-                      [35.21, -563.20, 180, -85.42],
-                      # [43.37, -609.62, 180, -113.62]
+                     [177, -485.67, 180, 28.08],
+                     [222.79, -541, 180, 72.53],
+                     [130.61, -473.97, 180, 00.02],
+                     [63.45, -502.00, 180, -44.50],
+                     [35.21, -563.20, 180, -85.42],
+                      # [43.37, -609.62, 180, -113.62] # Not use cabling under the arm
                       ]
 
-    n_holes_x = 10
-    n_holes_y = 3
+    max_holes_x = 23
+    max_holes_y = 30
+    n_holes_x = 15
+    n_holes_y = 10
     step_x = 12
     step_y = 12
-     
+    
     for i, init_pos in enumerate(init_positions):
         print(i, init_pos)
         if i == -1:
-            init_x = 9
+            init_x = 18
         else:
-            init_x = 0
+            init_x = 10
         position_xyzrz = etlcontroller.getPositionXYZ()
         etlcontroller.safeMovement(position_xyzrz[0], position_xyzrz[1], init_pos[2], init_pos[3])
-        for ix in range(init_x, n_holes_x):
+        for ix in range(init_x, n_holes_x, 2):
             if i == -1 and ix == 9:
                 init_y = 1
             else:
                 init_y = 0
 
-            for iy in range(init_y, n_holes_y):
+            for iy in range(init_y, n_holes_y, 2):
                 print(f"Col {ix}, Row {iy}")
                 x_hole = init_pos[0] - ix*step_x
                 y_hole = init_pos[1] + iy*step_y
@@ -77,7 +80,7 @@ if __name__ == "__main__":
                 position_j1j2j3j4 = etlcontroller.getPositionJ1J2J3_deg()
                 x, y, z, rz = position_xyzrz
                 j1, j2, j3, j4 = position_j1j2j3j4
-                etlcontroller.camera.changeFileName(f"GluePlate/Final_Calibration2/picture_col_{ix}_row{iy}_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png")
+                etlcontroller.camera.changeFileName(f"GluePlate/Final_Calibration3/picture_col_{ix}_row{iy}_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png")
                 etlcontroller.camera.takePic()
     
     # # Photo on the ruller

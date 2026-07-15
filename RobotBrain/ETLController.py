@@ -294,6 +294,9 @@ class ETLController:
                 +90         -90
                         0
         """
+        if rz == None:
+            return True
+
         self.updateStatus()
         self.printLog(f"Moving rZ from {self.position_xyzrz[3]} to {rz}")
 
@@ -458,13 +461,13 @@ class ETLController:
         self.changeZ(z_estimation)
         
         # General focus 
-        summary, focus_z, fraction = self._singleAutoFocus(z_range=1, z_speed=0.03, up_down=True)
+        summary, focus_z, fraction = self._singleAutoFocus(z_range=1, z_speed=0.02, up_down=True)
         if is_double:
             # Change Z to focus one
             self.changeZ(focus_z)
 
             # Second focus from bottom to top
-            summary, focus_z, fraction = self._singleAutoFocus(z_range=0.2, z_speed=0.005, up_down=False)
+            summary, focus_z, fraction = self._singleAutoFocus(z_range=0.2, z_speed=0.003, up_down=False)
             return summary, focus_z, fraction
         else:
             return summary, focus_z, fraction
@@ -511,14 +514,6 @@ class ETLController:
         # move to position but z = position("z")+z_range/2 (start position of autofocus)
         self.updateStatus()
         z = self.position_xyzrz[2]
-        if up_down:
-            start_z = z + z_range / 2
-            end_z   = z - z_range / 2
-        else:
-            start_z = z - z_range / 2
-            end_z   = z + z_range / 2
-
-
         # init camera autofocus_acquisition
 
         # move to position but z = position("z")-z_range/2 and speed = z_speed
@@ -529,6 +524,12 @@ class ETLController:
 
         max_retries = 3
         for attemp in range(max_retries):
+            if up_down:
+                start_z = z + z_range / 2
+                end_z   = z - z_range / 2
+            else:
+                start_z = z - z_range / 2
+                end_z   = z + z_range / 2
             self.changeZ(start_z)
             
             self.printLog("Starting autofocus")
@@ -547,7 +548,9 @@ class ETLController:
             if fraction is not None:
                 break
             else:
-                self.printWarning(f"Autofocus failed at attemp {attemp}")
+                self.printWarning(f"Autofocus failed at attemp {attemp}, giving a bigger range")
+                z_range = z_range*1.1
+
             # for i in range(3):
             #     if self.camera.handshake():
             #         break
