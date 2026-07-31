@@ -1,15 +1,30 @@
 from datetime import datetime
-
+import os
 
 class CalibrationHandler:
 
-    def __init__(self, name='ExperimentalSetup/Calibrations/calibrations.txt'):
+    def __init__(self, name='calibrations.txt'):
 
-        self.name = name
-        f = open(self.name)
-        self.calibrations = f.readlines()
-        self.N = len(self.calibrations)
-        f.close()
+        self.name = '../Calibrations/' + name
+        self.N = 0
+        if not os.path.isdir('../Calibrations'):
+            print('Calibration direction not found... creating it.')
+            os.mkdir('../Calibrations/')
+        try: 
+            f = open(self.name)
+            self.calibrations = f.readlines()
+            self.N = len(self.calibrations)
+            print('Calibration file successfully read')
+            f.close()
+        except:
+            self.writeNewCalibrationFromEmpty(R1 = 380, R2 = 240, Z0 = 400, focaldistance = 200, focusdistance = 36,
+                                     cameraX = 0, cameraY = 0, cameraZ = 0, cameraPsi = 0, cameraTheta = 0, 
+                                     cameraPhi = 0, c = -1300)
+            f = open(self.name)
+            self.calibrations = f.readlines()
+            self.N = len(self.calibrations)
+            print('Calibration file successfully read')
+            f.close()
 
 
     ########################################################################
@@ -70,7 +85,6 @@ class CalibrationHandler:
                             cameraPhi = 0, c = 256):
         
         
-        print('-----------------------')
         cali = dict()
         cali['N'] = self.N
         cali['date'] = datetime.today().isoformat()
@@ -89,10 +103,40 @@ class CalibrationHandler:
 
         self.N = self.N + 1
         line = self.parseCalibrationToText(cali)
-        print(line)
         f = open(self.name, 'a')
         f.write(line + '\n')
         f.close()
 
 
+    ##################################################################   
+    def writeNewCalibrationFromEmpty(self, R1 = 380, R2 = 240, Z0 = 400, 
+                            focaldistance = 200, focusdistance = 36,
+                            cameraX = 0, cameraY = 0, cameraZ = 0,
+                            cameraPsi = 0, cameraTheta = 0, 
+                            cameraPhi = 0, c = 256):
+        
+        
+        cali = dict()
+        cali['N'] = self.N
+        cali['date'] = datetime.today().isoformat()
+        cali['R1'] = R1
+        cali['R2'] = R2
+        cali['Z0'] = Z0
+        cali['focaldistance'] = focaldistance
+        cali['focusdistance'] = focusdistance
+        cali['cameraX'] = cameraX
+        cali['cameraY'] = cameraY
+        cali['cameraZ'] = cameraZ
+        cali['cameraPsi'] =  cameraPsi
+        cali['cameraTheta'] = cameraTheta
+        cali['cameraPhi'] = cameraPhi
+        cali['c'] = c
 
+        self.N = self.N + 1
+        line = self.parseCalibrationToText(cali)
+        f = open(self.name, 'w')
+        f.write(line + '\n')
+        f.close()
+
+
+ 

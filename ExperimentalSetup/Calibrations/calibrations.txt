@@ -1,1 +1,2 @@
 N 0 date 2026-05-22T12:39:03.488458 R1 380 R2 240 Z0 400 focaldistance 200 focusdistance 36 cameraX -0.9888301540618721 cameraY -95.4524146514308 cameraZ 0 cameraPsi 0 cameraTheta 0 cameraPhi 0 c -256.0
+N 1 date 2026-07-31T11:00:40.383206 R1 380.0 R2 240.0 Z0 400.0 focaldistance 200.0 focusdistance 36.0 cameraX -0.13034221628483625 cameraY -96.16203356581687 cameraZ 0.0 cameraPsi -0.9352644365592162 cameraTheta 0.0 cameraPhi 0.0 c -256.0

@@ -8,8 +8,7 @@ import math
 class ProcessCalibrationPoint:
 
     def __init__(self, imageName, destination):
-
-        self.destinationFile = destination + '/' + imageName.split('/')[2]
+        self.destinationFile = destination + '/' + imageName.split('/')[3]
         self.imageName = imageName
         self.height = 0
         self.width = 0
@@ -22,7 +21,7 @@ class ProcessCalibrationPoint:
         self.WARNING = '\033[93m'
         self.printLog('Start calibration point')
 
-    def fit(self):
+    def fit(self, th):
         
         self.printLog('Starting the fit with image ' + self.imageName)
         
@@ -38,7 +37,7 @@ class ProcessCalibrationPoint:
         axs[0].set_title('Original image')
        
         #Getting the main contour
-        _, thresh = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY_INV)
+        _, thresh = cv2.threshold(gray, th, 255, cv2.THRESH_BINARY_INV)
         #_, thresh = cv2.threshold(gray, 130, 255, cv2.THRESH_BINARY_INV)
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         largest_contour = max(contours, key=cv2.contourArea)
@@ -67,7 +66,7 @@ class ProcessCalibrationPoint:
             cal = CircleFitter(xv, yv)
             results = cal.fit()
         except:
-            return 0, 0, False
+            return 0, 0, 0, False
 
         a, b, r = results.params
         print(f"Centro del círculo: (x={a}, y={b}), radius={r}")
@@ -78,10 +77,14 @@ class ProcessCalibrationPoint:
             cal2 = CircleFitter(xv2, yv2)
             results2 = cal2.fit()
         except:
-            return 0, 0, False
+            return 0, 0, 0, False
 
         a, b, r = results2.params
+        rmm = abs(r.item()) * 1.0/1718.0
         print(f"Centro del círculo: (x={a}, y={b}), radius={r}")
+        if abs(rmm-0.6) > 0.05 * 0.6:
+            print('Point discarded because radius measurement was not good')
+            return 0, 0, 0, False
         
         #Drawing final
         circle = plt.Circle((a,b), r, color='blue', fill='false')

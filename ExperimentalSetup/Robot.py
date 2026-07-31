@@ -43,6 +43,7 @@ class Robot:
         #Z0 is the height of the pointer of the robot when Z = 0
         self.Z0 = Z0
         self.tol = 1e-3
+        self.phiOrig = 0.0
         # logging.info(f'Robot R1: {R1}, R2: {R2}, h: {h}, Z0: {Z0} tol: {self.tol}')
         #Camera and table
         self.camera = camera
@@ -67,7 +68,7 @@ class Robot:
     def JMoveRobotTo(self, pos):
         
         #Update the J coordinates
-        self.J1 = pos[0] 
+        self.J1 = pos[0] + self.phiOrig
         self.J2 = pos[1] 
         self.J3 = pos[2] 
         self.J4 = -pos[3] 
@@ -83,19 +84,16 @@ class Robot:
 
     
     ######### Move the robot ###########################################
-    def CartesianMoveRobotTo(self, pos, refJ):
+    def CartesianMoveRobotTo(self, pos):
 
         status, j1, j2, Z = self.fromCartesianToInner(np.asarray([pos[0], pos[1], pos[2]]))
-        self.J4 = pos[3]  
-        self.jzrot.setFromAngles(pos.J4, 0.0, 0.0)
-        
+        jz = -pos[3]      
         
         if status:
-            pos = innerpoint(j1, j2, Z, jz)
-            self.MoveRobotTo(pos)
+            pos = [j1, j2, Z, jz]
+            self.JMoveRobotTo(pos)
         else:
-            r = np.sqrt(v[0]**2 + v[1]**2)
-            logging.error(f'There was an error moving the robot. R = {r}')
+            logging.error('There was an error moving the robot.')
             sys.exit()     
 
    
@@ -150,6 +148,7 @@ class Robot:
 
         x = self.R1 * np.cos(j[0]) + self.R2 * np.cos(j[1])
         y = self.R1 * np.sin(j[0]) + self.R2 * np.sin(j[1])
+        print('hey', (x-v[0])**2 + (y-v[1])**2, j[0], j[1]-j[0])
         if (x-v[0])**2 + (y-v[1])**2 < self.tol:
             return True
         return False
@@ -179,7 +178,6 @@ class Robot:
         a = (x**2 + y**2)
         b = -2.0 * Delta * x
         c = Delta**2 - y**2
-
         if b**2-4.0*a*c < 0.0:
             return False, 0, 0, 0
     
@@ -215,7 +213,8 @@ class Robot:
                 # This I still need to think about it
                 if j[0] < j1_min:
                     index = i
-                    j2_min = j[0]
+                    j1_min = j[0]
+                    return True, pairs[index][0], pairs[index][1]-pairs[index][0], Z
         if index == -1:
             return False, 0, 0, 0
         else:
