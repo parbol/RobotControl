@@ -19,7 +19,7 @@ class CalibrationHandler:
         except:
             self.writeNewCalibrationFromEmpty(R1 = 380, R2 = 240, Z0 = 400, focaldistance = 200, focusdistance = 36,
                                      cameraX = 0, cameraY = 0, cameraZ = 0, cameraPsi = 0, cameraTheta = 0, 
-                                     cameraPhi = 0, c = -1300)
+                                     cameraPhi = 0, c = -1300, phiOrig = 0.0)
             f = open(self.name)
             self.calibrations = f.readlines()
             self.N = len(self.calibrations)
@@ -46,6 +46,7 @@ class CalibrationHandler:
         cali['cameraTheta'] = float(line[23])
         cali['cameraPhi'] = float(line[25])
         cali['c'] = float(line[27])
+        cali['phiOrig'] = float(line[29])
         return cali
 
 
@@ -82,7 +83,7 @@ class CalibrationHandler:
                             focaldistance = 200, focusdistance = 36,
                             cameraX = 0, cameraY = 0, cameraZ = 0,
                             cameraPsi = 0, cameraTheta = 0, 
-                            cameraPhi = 0, c = 256):
+                            cameraPhi = 0, c = 256, phiOrig = 0.0):
         
         
         cali = dict()
@@ -100,6 +101,7 @@ class CalibrationHandler:
         cali['cameraTheta'] = cameraTheta
         cali['cameraPhi'] = cameraPhi
         cali['c'] = c
+        cali['phiOrig'] = phiOrig
 
         self.N = self.N + 1
         line = self.parseCalibrationToText(cali)
@@ -113,7 +115,7 @@ class CalibrationHandler:
                             focaldistance = 200, focusdistance = 36,
                             cameraX = 0, cameraY = 0, cameraZ = 0,
                             cameraPsi = 0, cameraTheta = 0, 
-                            cameraPhi = 0, c = 256):
+                            cameraPhi = 0, c = 256, phiOrig=0):
         
         
         cali = dict()
@@ -131,6 +133,7 @@ class CalibrationHandler:
         cali['cameraTheta'] = cameraTheta
         cali['cameraPhi'] = cameraPhi
         cali['c'] = c
+        cali['phiOrig'] = phiOrig
 
         self.N = self.N + 1
         line = self.parseCalibrationToText(cali)

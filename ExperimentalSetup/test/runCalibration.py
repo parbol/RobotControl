@@ -54,6 +54,9 @@ if __name__ == "__main__":
                     focaldistance = cali['focaldistance'],
                     focusdistance = cali['focusdistance'])
 
+    # Generate the robot
+    robot = Robot(cali['R1'], cali['R2'], cali['Z0'], cali['phiOrig'], table, camera)
+
     #Likelihood
     lhood = CameraLikelihood(endog, exdog, robot)
     res = lhood.fit()
@@ -85,6 +88,6 @@ if __name__ == "__main__":
                                     cameraX = res.params[0],
                                     cameraY = res.params[1],
                                     cameraZ = cali['cameraZ'],
-                                    cameraPsi = psi)
+                                    cameraPsi = psi, phiOrig = res.params[5])
 
    

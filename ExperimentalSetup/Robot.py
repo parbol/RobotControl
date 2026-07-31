@@ -35,7 +35,7 @@ logging.basicConfig(format="{asctime} - {levelname} - {message}", style="{", dat
 
 class Robot:
 
-    def __init__(self, R1, R2, Z0, table, camera):
+    def __init__(self, R1, R2, Z0, phiOrig, table, camera):
 
         #Robot parameters
         self.R1 = R1
@@ -43,7 +43,7 @@ class Robot:
         #Z0 is the height of the pointer of the robot when Z = 0
         self.Z0 = Z0
         self.tol = 1e-3
-        self.phiOrig = 0.0
+        self.phiOrig = phiOrig
         # logging.info(f'Robot R1: {R1}, R2: {R2}, h: {h}, Z0: {Z0} tol: {self.tol}')
         #Camera and table
         self.camera = camera
