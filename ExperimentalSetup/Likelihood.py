@@ -72,7 +72,7 @@ class CameraLikelihood(GenericLikelihoodModel):
         return chi2
 
 
-    def fit(self, start_params=None, method='bfgs', maxiter=100000, **kwargs):
+    def fit(self, start_params=None, method='powell', maxiter=100000, **kwargs):
         # methods = bfgs, lbfgs, nm, newton, powell, cg, ncg, basinhopping, minimize
 
         if start_params is None:

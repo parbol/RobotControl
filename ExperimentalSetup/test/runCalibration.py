@@ -42,7 +42,6 @@ if __name__ == "__main__":
     caliHandler = CalibrationHandler('calibrations.txt')
     cali = caliHandler.getLastCalibration()
     
-    endog, exdog = prepareInput(itemlist, cali['focusdistance'])
    
     #Table
     table = Table(0.01, 0.0)
@@ -55,11 +54,7 @@ if __name__ == "__main__":
                     focaldistance = cali['focaldistance'],
                     focusdistance = cali['focusdistance'])
 
-    # Generate the robot
-    robot = Robot(cali['R1'], cali['R2'], cali['Z0'], table, camera)
-        
     #Likelihood
-
     lhood = CameraLikelihood(endog, exdog, robot)
     res = lhood.fit()
     chi2 = lhood.check()
@@ -86,10 +81,10 @@ if __name__ == "__main__":
     caliHandler.writeNewCalibration(R1 = cali['R1'], R2 = cali['R2'],
                                     Z0 = cali['Z0'], focaldistance = cali['focaldistance'],
                                     focusdistance = cali['focusdistance'], cameraTheta = cali['cameraTheta'],
-                                    cameraPhi = cali['cameraPhi'], c = cali['c'],
+                                    cameraPhi = cali['cameraPhi'], c = res.params[4],
                                     cameraX = res.params[0],
                                     cameraY = res.params[1],
                                     cameraZ = cali['cameraZ'],
-                                    cameraPsi = res.params[2])
+                                    cameraPsi = psi)
 
    
