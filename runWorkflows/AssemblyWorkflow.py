@@ -38,6 +38,14 @@ Z_ETROCS = 125
 Z_PCB = 138
 Z_COVER = 140 # TODO - Check
 
+# Units
+mm = 1
+
+# Corrections
+ETROC_CENTER_CORRECTION = [0.0*mm, 0.748*mm]
+PCB_SHIFT_POS = [2.499*mm, 2.294*mm]
+ETROC_SIZE = [21*mm, 23*mm]
+
 def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller):
     """
     Acquire fiducial mark images for ETROCs and compute their center positions
@@ -104,6 +112,8 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller):
             # Compute center position of the ETROC
             corners = np.asarray(corners)
             center = np.mean(corners, axis=0) 
+            # Correct center position with nominal fiducial marks pos, I assume pads are placed up (positive y)
+            center = [center[0]+ETROC_CENTER_CORRECTION[0], center[1]+ETROC_CENTER_CORRECTION[1]]
             # Compute rotation angle
             # Horizontal vectors (C-A and D-B)
             horizontal = ((corners[2]-corners[0]) + (corners[3]-corners[1])) / 2
@@ -134,7 +144,7 @@ def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller):
     """
     with open("runWorkflows/FiducialMarkPos.json") as f:
         positions = json.load(f)
-    center_pos = {}
+    place_pos = {}
     # Take pic PCBs
     for i_module in modules_to_perform_assembly:
         corners = []
@@ -167,21 +177,34 @@ def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller):
             corners.append([x_reco_robot, y_reco_robot])
         # Compute center position of the ETROC
         corners = np.asarray(corners)
-        center = np.mean(corners, axis=0)
+        # center = np.mean(corners, axis=0)
         # Compute rotation angle
         # Horizontal vectors (C-A and D-B)
         horizontal = ((corners[2]-corners[0]) + (corners[3]-corners[1])) / 2
         theta_rad = np.arctan2(horizontal[1], horizontal[0])
         theta_deg = np.rad2deg(theta_rad)
-        center_pos[f"PCB_{i_module}"] = [center[0], center[1], theta_deg]
+        # center_pos[f"PCB_{i_module}"] = [center[0], center[1], theta_deg]
         # Compute placement of each module in the PCB
         # the placement is the mean position between the corner and the center
         # XXX - Assuming pics are taken in A -> B -> C -> D order
-        for i, i_etroc in enumerate(["A", "B", "C", "D"]):
-            placement_position = (center + corners[i])/2
-            center_pos[f"PCB_{i_module}{i_etroc}"] = [placement_position[0], placement_position[1], theta_deg] 
+        place_pos[f"PCB_{i_module}A"] = [
+                corners[0, 0] - PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2,
+                corners[0, 1] - PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2, theta_deg
+                ]
+        place_pos[f"PCB_{i_module}B"] = [
+                corners[1, 0] - PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2,
+                corners[1, 1] + PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2, theta_deg
+                ]
+        place_pos[f"PCB_{i_module}C"] = [
+                corners[2, 0] + PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2,
+                corners[2, 1] - PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2, theta_deg
+                ]
+        place_pos[f"PCB_{i_module}D"] = [
+                corners[3, 0] + PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2,
+                corners[3, 1] + PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2, theta_deg
+                ]
 
-    return center_pos
+    return place_pos
 
 
 if __name__ == "__main__":
