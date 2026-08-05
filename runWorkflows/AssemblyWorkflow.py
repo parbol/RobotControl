@@ -23,13 +23,13 @@ import ImageAnalysis.ProcessFiducialPoint as ProcessFiducialPoint
 #    B negative x, negative y
 #    C positive x, positive y
 #    D positive x, negative y
-#     _______
-#    |   |   | 
-#    | A | C |
-#    |___|___|
-#    |   |   |
-#    | B | D |
-#    |___|___|
+#     ___________
+#    |     |     | 
+#    |  A  |  C  |
+#    |_____|_____|
+#    |     |     |
+#    |  B  |  D  |
+#    |_____|_____|
 
 
 ## Constants
@@ -42,9 +42,9 @@ Z_COVER = 140 # TODO - Check
 mm = 1
 
 # Corrections
-ETROC_CENTER_CORRECTION = [0.0*mm, 0.748*mm]
-PCB_SHIFT_POS = [2.499*mm, 2.294*mm]
-ETROC_SIZE = [21*mm, 23*mm]
+ETROC_CENTER_CORRECTION = [0.748*mm, 0.0*mm]
+PCB_SHIFT_POS = [2.294*mm, 2.499*mm]
+ETROC_SIZE = [23*mm, 21*mm]
 
 def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller):
     """
@@ -113,7 +113,12 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller):
             corners = np.asarray(corners)
             center = np.mean(corners, axis=0) 
             # Correct center position with nominal fiducial marks pos, I assume pads are placed up (positive y)
-            center = [center[0]+ETROC_CENTER_CORRECTION[0], center[1]+ETROC_CENTER_CORRECTION[1]]
+            if i_module == "A" or i_module == "B":
+                # Pads in negative X 
+                center = [center[0]-ETROC_CENTER_CORRECTION[0], center[1]+ETROC_CENTER_CORRECTION[1]]
+            if i_module == "C" or i_module == "D":
+                # Pads in positive X 
+                center = [center[0]+ETROC_CENTER_CORRECTION[0], center[1]+ETROC_CENTER_CORRECTION[1]]
             # Compute rotation angle
             # Horizontal vectors (C-A and D-B)
             horizontal = ((corners[2]-corners[0]) + (corners[3]-corners[1])) / 2
