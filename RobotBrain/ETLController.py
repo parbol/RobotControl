@@ -518,9 +518,7 @@ class ETLController:
 
         # move to position but z = position("z")-z_range/2 and speed = z_speed
         stored_speed = self.getVelocity()
-        self.setVelocity(z_speed)
         stored_acceleration = self.getAcceleration()
-        self.setAcceleration(100)
 
         max_retries = 3
         for attemp in range(max_retries):
@@ -532,6 +530,9 @@ class ETLController:
                 end_z   = z + z_range / 2
             self.changeZ(start_z)
             
+            self.setVelocity(z_speed)
+            self.setAcceleration(100)
+                
             self.printLog("Starting autofocus")
             if not self.camera.start_autofocusAcquisition():
                 raise RuntimeError("Could not start autofocus acquisition")
