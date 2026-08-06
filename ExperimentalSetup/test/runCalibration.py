@@ -38,6 +38,9 @@ if __name__ == "__main__":
     with open (options.input, 'rb') as fp:
         itemlist = pickle.load(fp)
 
+    # XXX - Is the focusdistance 36?
+    endog, exdog = prepareInput(itemlist, 36)
+
     #Get calibrations
     caliHandler = CalibrationHandler('calibrations.txt')
     cali = caliHandler.getLastCalibration()
