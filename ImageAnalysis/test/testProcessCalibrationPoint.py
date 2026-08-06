@@ -104,8 +104,10 @@ if __name__=='__main__':
     #listDir contains the name of the directory for a give set of pictures
     #and the threshold to be applied in the pattern reconition
     listDir = []
-    listDir.append(['./newCalibrations/calibrationDataPoints3', 30])
-    listDir.append(['./newCalibrations/Final_Calibration3', 100])
+    # listDir.append(['./newCalibrations/calibrationDataPoints3', 30])
+    # listDir.append(['./newCalibrations/Final_Calibration3', 100])
+    # listDir.append(['/home/antonio/Escritorio/ModuleAssembly/ETL/Final_Calibration4/pictures', 100])
+    listDir.append(['/home/antonio/Escritorio/ModuleAssembly/ETL/Final_Calibration3/pictures', 100])
    
     #Some plotting to check consistency
     partialNominalPoints = []

@@ -8,7 +8,8 @@ import math
 class ProcessCalibrationPoint:
 
     def __init__(self, imageName, destination):
-        self.destinationFile = destination + '/' + imageName.split('/')[3]
+        self.destinationFile = destination + '/' + imageName.split('/')[-1]
+        self.destinationFileWrong = destination + '_Wrong/' + imageName.split('/')[-1]
         self.imageName = imageName
         self.height = 0
         self.width = 0
@@ -20,6 +21,7 @@ class ProcessCalibrationPoint:
         self.ENDC = '\033[0m'
         self.WARNING = '\033[93m'
         self.printLog('Start calibration point')
+
 
     def fit(self, th):
         
@@ -81,13 +83,19 @@ class ProcessCalibrationPoint:
 
         a, b, r = results2.params
         rmm = abs(r.item()) * 1.0/1718.0
-        print(f"Centro del círculo: (x={a}, y={b}), radius={r}")
-        if abs(rmm-0.6) > 0.05 * 0.6:
+        print(f"Centro del círculo: (x={a}, y={b}), radius={r}px = {rmm}mm")
+        if abs(rmm-0.6) > 0.2 * 0.6:
             print('Point discarded because radius measurement was not good')
+            #Drawing final
+            circle = plt.Circle((a,b), r, color='blue', fill='false', alpha=0.5)
+            axs[2].add_patch(circle)
+            axs[2].imshow(final, cmap='gray')
+            axs[2].set_title('Final circle')
+            plt.savefig(self.destinationFileWrong)
             return 0, 0, 0, False
         
         #Drawing final
-        circle = plt.Circle((a,b), r, color='blue', fill='false')
+        circle = plt.Circle((a,b), r, color='blue', fill='false', alpha=0.5)
         axs[2].add_patch(circle)
         axs[2].imshow(final, cmap='gray')
         axs[2].set_title('Final circle')
