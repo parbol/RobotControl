@@ -55,6 +55,7 @@ if __name__ == "__main__":
     #Initialize Camera
     robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)
     
+    robotCamera.set_exposure(0.025)
     for i in range(0, options.npic):
         print('Picture number', i)
         robotCamera.takePic()
