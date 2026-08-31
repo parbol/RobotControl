@@ -578,6 +578,7 @@ class ETLController:
 
     ##############################################################################
     def wait_time(self, seconds: int):
+        self.printLog(f"Waiting {seconds} seconds")
         self.robotcontroller.wait_time(seconds)
         return True
 
