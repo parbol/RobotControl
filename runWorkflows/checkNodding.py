@@ -45,6 +45,11 @@ if __name__ == "__main__":
         # Generate date
         now = datetime.now()
         date_str = f"{now.year}-{now.month}-{now.day}-{now.hour}-{now.minute}"
+
+        # # Move to a fixed position
+        # fixed_position = [120, -400, 180, 28.08]
+        # etlcontroller.safeMovement(fixed_position[0], fixed_position[1], fixed_position[2], fixed_position[3])
+        
         
         # Corner 0,0
         pic_position = [177, -485.67, 180, 28.08]
