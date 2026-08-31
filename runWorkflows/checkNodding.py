@@ -18,7 +18,7 @@ if __name__ == "__main__":
     parser.add_option("-d", "--device", dest="device", type="string", default="/dev/ttyUSB0", help="Robot device name.")
     parser.add_option("-b", "--bauds", dest="bauds", type=int, default=115200, help="Robot bauds.")
     parser.add_option("-n", "--npic",           dest="npic",           type=int,       default=50,             help="N pictures")
-    parser.add_option("-t", "--deadtime",           dest="dadetime",           type=bool,       default=False,             help="Use dead time")
+    parser.add_option("-t", "--deadtime", dest="deadtime", action="store_true",default=False, help="Use dead time")
 
     (options, args) = parser.parse_args()
 
@@ -38,13 +38,13 @@ if __name__ == "__main__":
     etlcontroller.camera.set_exposure(0.025)
     
     if options.deadtime:
-        dead_time = list(range(0, options.npic*5, 5))
+        dead_time = [1]*options.npic
     else:
         dead_time = [0]*options.npic
     for i_dead_time in dead_time:
         # Generate date
         now = datetime.now()
-        date_str = f"{now.year}-{now.month}-{now.day}-{now.hour}-{now.minute}"
+        date_str = f"{now.year}-{now.month}-{now.day}-{now.hour}-{now.minute}-{now.second}"
 
         # # Move to a fixed position
         # fixed_position = [120, -400, 180, 28.08]
@@ -56,14 +56,18 @@ if __name__ == "__main__":
         etlcontroller.safeMovement(pic_position[0], pic_position[1], pic_position[2], pic_position[3])
         summary, focus_z, fraction = etlcontroller.fullAutoFocus(127, is_double=True)   
         etlcontroller.changeZ(focus_z)
-        if options.deadtime:
-            etlcontroller.waitTime(i_dead_time)
-        # Take pic
+
         position_xyzrz = etlcontroller.getPositionXYZ()
         position_j1j2j3j4 = etlcontroller.getPositionJ1J2J3_deg()
         x, y, z, rz = position_xyzrz
         j1, j2, j3, j4 = position_j1j2j3j4
-        etlcontroller.camera.changeFileName(f"RepeatibilityTest/{date_str}_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png")
+        if options.deadtime:
+            etlcontroller.wait_time(i_dead_time)
+            name = f"NoddingTest/{date_str}-wait_{i_dead_time}_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png"
+        else:
+            name = f"NoddingTest/{date_str}-wait_0_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png"
+        # Take pic
+        etlcontroller.camera.changeFileName(name)
         etlcontroller.camera.takePic()
 
     etlcontroller.exit()

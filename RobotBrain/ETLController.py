@@ -578,7 +578,7 @@ class ETLController:
 
     ##############################################################################
     def wait_time(self, seconds: int):
-        self.robotController.wait_time(seconds)
+        self.robotcontroller.wait_time(seconds)
         return True
 
     ##############################################################################
