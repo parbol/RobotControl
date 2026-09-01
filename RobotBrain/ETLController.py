@@ -121,7 +121,7 @@ class ETLController:
         # Use a safe j2 or +-90 to avoid colisions while going to j1 = -45
         # Check if current orientation is the final one
         if self.checkArmPlacement() != left_handed:
-            final_j2 = -90 if left_handed else 90
+            final_j2 = -90 if left_handed else 45
             safe_j2 = 90 if left_handed else -90
             self.updateStatus()
             # Move to safe z 
