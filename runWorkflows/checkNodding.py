@@ -63,11 +63,11 @@ if __name__ == "__main__":
         j1, j2, j3, j4 = position_j1j2j3j4
         if options.deadtime:
             etlcontroller.wait_time(i_dead_time)
-            name = f"NoddingTest/{date_str}-wait_{i_dead_time}_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png"
+            name = f"{date_str}-wait_{i_dead_time}_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}"
         else:
-            name = f"NoddingTest/{date_str}-wait_0_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png"
+            name = fi"{date_str}-wait_0_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}"
         # Take pic
-        etlcontroller.camera.changeFileName(name)
+        etlcontroller.camera.changeFileName(f"NoddingTest/{name}.png")
         etlcontroller.camera.takePic()
 
     etlcontroller.exit()

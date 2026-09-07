@@ -118,7 +118,7 @@ class ETLController:
     ##############################################################################
     def rotateArm(self, left_handed = True):
         # Use the diagona j1 -45 to avoid collisions with the robot
-        # Use a safe j2 or +-90 to avoid colisions while going to j1 = -45
+        # Use a safe j2 or +-90 to avoid collisions while going to j1 = -45
         # Check if current orientation is the final one
         if self.checkArmPlacement() != left_handed:
             final_j2 = -90 if left_handed else 45
@@ -138,7 +138,6 @@ class ETLController:
             self.robotcontroller.moveJ(self.position_j1j2j3j4[0], final_j2, self.position_j1j2j3j4[2], self.position_j1j2j3j4[3]) 
             self.updateStatus()
 
-            self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], self.position_xyzrz[3])
             if self.checkArmPlacement() == left_handed:
                 return True
             else:
@@ -186,7 +185,7 @@ class ETLController:
 
         # Check if changing region
         if (self.position_xyzrz[0] - self.x_limit) * (x - self.x_limit) <= 0:
-            self.printLog("Crossing x limit = {self.x_limit}, following safety path")
+            self.printLog(f"Crossing x limit = {self.x_limit}, following safety path")
 
             self.rotateRZ(self.safe_rz)
             self.updateStatus()
@@ -206,9 +205,8 @@ class ETLController:
         self.rotateRZ(rz)
         self.updateStatus()
 
-        # Move to desired pos 
-        self.printLog(f"Moving to final position, Z = {z}")
-        self.changeZ(z)
+        self.printLog(f"Moving equal to final pos in (X, Y, Z, RZ)")
+        self.robotcontroller.moveEqual(x, y, z, rz)
         self.updateStatus()
         return True
 
@@ -328,6 +326,7 @@ class ETLController:
     def stepRZ(self, step_rz):
         if abs(step_rz) > 20:
             self.printError("The step rotation is too big check piece placements again IDIOT")
+            return False
         self.updateStatus()
         final_rz = self.position_xyzrz[3] + step_rz
         self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], final_rz)
@@ -378,7 +377,7 @@ class ETLController:
         elif part_name.startswith("COVER"):
             safe_pos = self.plate_position_xyzrz[3]
         else:
-            self.printWarning("I do not know which plate I am loooking for")
+            self.printWarning("I do not know which plate I am looking for")
             safe_pos = self.position_xyzrz
         # Move X-Y to part position and rz safe pos
         self.safeMovement(x, y, safe_pos[2], safe_pos[3])
@@ -420,7 +419,7 @@ class ETLController:
         elif part_name.startswith("COVER"):
             safe_pos = self.plate_position_xyzrz[3]
         else:
-            self.printWarning("I do not know which plate I am loooking for")
+            self.printWarning("I do not know which plate I am looking for")
             safe_pos = self.position_xyzrz
         # Move X-Y to part position and rz safe pos
         self.safeMovement(x, y, safe_pos[2], safe_pos[3])
@@ -521,7 +520,7 @@ class ETLController:
         stored_acceleration = self.getAcceleration()
 
         max_retries = 3
-        for attemp in range(max_retries):
+        for _ in range(max_retries):
             if up_down:
                 start_z = z + z_range / 2
                 end_z   = z - z_range / 2
@@ -552,13 +551,6 @@ class ETLController:
                 self.printWarning(f"Autofocus failed at attemp {attemp}, giving a bigger range")
                 z_range = z_range*1.1
 
-            # for i in range(3):
-            #     if self.camera.handshake():
-            #         break
-            # else: 
-            #     self.printError("Loose connection to camera check cable")
-        else:
-            self.printError("Autofocus failed after 3 attemps")
 
         if up_down:
             focus_z = start_z - fraction * z_range

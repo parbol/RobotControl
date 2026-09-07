@@ -99,7 +99,7 @@ if __name__ == "__main__":
 
                     etlcontroller.safeMovement(x_hole, y_hole, init_pos[2], None)
                     summary, focus_z, fraction = etlcontroller.fullAutoFocus(127, is_double=True)   
-                    etlcontroller.changeZ(focus_z)
+                    etlcontroller.saveMovement(x_hole, y_hole, focus_z, None)
                     # Take pic
                     position_xyzrz = etlcontroller.getPositionXYZ()
                     position_j1j2j3j4 = etlcontroller.getPositionJ1J2J3_deg()
