@@ -57,10 +57,10 @@ if __name__ == "__main__":
     max_holes_x = 23
     # max_holes_y = 30 # Only 24 accesible without collision
     max_holes_y = 23
-    n_holes_x = 23
-    n_holes_y = 23
+    n_holes_x = 2
+    n_holes_y = 2
     
-    for iteration in range(5):
+    for iteration in range(10):
 
         for i in range(min(len(init_positions),len(final_positions))):
             print(i, init_positions[i], final_positions[i])
@@ -70,7 +70,7 @@ if __name__ == "__main__":
             x_positions = np.linspace(init_pos[0], final_pos[0], max_holes_x)
             y_positions = np.linspace(init_pos[1], final_pos[1], max_holes_y)
 
-            if i == 1:
+            if i == -1:
                 init_x = 1
             else:
                 # init_x = max_holes_x - 1
@@ -83,7 +83,7 @@ if __name__ == "__main__":
             position_xyzrz = etlcontroller.getPositionXYZ()
             etlcontroller.safeMovement(position_xyzrz[0], position_xyzrz[1], init_pos[2], init_pos[3])
             for ix_pos, i_col in zip(x_pos_to_visit, x_hole_indices):
-                if i == 1 and i_col == x_hole_indices[0]:
+                if i == -1 and i_col == x_hole_indices[0]:
                     init_y = 1
                 else:
                     # init_y = max_holes_y - 1
@@ -105,7 +105,7 @@ if __name__ == "__main__":
                     position_j1j2j3j4 = etlcontroller.getPositionJ1J2J3_deg()
                     x, y, z, rz = position_xyzrz
                     j1, j2, j3, j4 = position_j1j2j3j4
-                    etlcontroller.camera.changeFileName(f"Calibration_27-08-26/picture_col_{i_col}_row{i_row}_iteration{iteration}_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png")
+                    etlcontroller.camera.changeFileName(f"Calibration_07-09-26/picture_col_{i_col}_row{i_row}_iteration{iteration}_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png")
                     etlcontroller.camera.takePic()
     
     # # Photo on the ruller
