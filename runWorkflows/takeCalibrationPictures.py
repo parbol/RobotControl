@@ -38,8 +38,8 @@ if __name__ == "__main__":
     init_positions = [# [176.73, -485.67, 180, 28.08], # Old position not working now
                      [177, -485.67, 180, 28.08],
                      # # [222.79, -541, 180, 72.53], Changed on 6th august, i dont know why 
-                     # [223.29, -543.5, 180, 72.53],
-                     # [130.61, -473.97, 180, 00.02],
+                     [223.29, -543.5, 180, 72.53],
+                     [130.61, -473.97, 180, 00.02],
                      # [63.45, -502.00, 180, -44.50],
                      # [35.21, -563.20, 180, -85.42],
                      #  # [43.37, -609.62, 180, -113.62] # Not use cabling under the arm
@@ -57,10 +57,10 @@ if __name__ == "__main__":
     max_holes_x = 23
     # max_holes_y = 30 # Only 24 accesible without collision
     max_holes_y = 23
-    n_holes_x = 2
-    n_holes_y = 2
+    n_holes_x = 10
+    n_holes_y = 10
     
-    for iteration in range(10):
+    for iteration in range(1):
 
         for i in range(min(len(init_positions),len(final_positions))):
             print(i, init_positions[i], final_positions[i])
@@ -75,9 +75,12 @@ if __name__ == "__main__":
             else:
                 # init_x = max_holes_x - 1
                 init_x = 0
-
+            # From top left on -2
             # x_hole_indices = np.arange(init_x, max_holes_x-n_holes_x, -2)
-            x_hole_indices = np.arange(init_x, n_holes_x, 1)
+            # From 0,0 on +1
+            # x_hole_indices = np.arange(init_x, n_holes_x, 1)
+            # From 0,0 on +2
+            x_hole_indices = np.arange(init_x, n_holes_x, 2)
             x_pos_to_visit = x_positions[x_hole_indices]
 
             position_xyzrz = etlcontroller.getPositionXYZ()
@@ -89,7 +92,12 @@ if __name__ == "__main__":
                     # init_y = max_holes_y - 1
                     init_y = 0
 
-                y_hole_indices = np.arange(init_y, n_holes_y, 1)
+                # From top left on -2
+                # y_hole_indices = np.arange(init_y, max_holes_y-n_holes_y, -2)
+                # From 0,0 on +1
+                # y_hole_indices = np.arange(init_y, n_holes_y, 1)
+                # From 0,0 on +2
+                y_hole_indices = np.arange(init_y, n_holes_y, 2)
                 y_pos_to_visit = y_positions[y_hole_indices]
 
                 for iy_pos, i_row in zip(y_pos_to_visit, y_hole_indices):
@@ -99,13 +107,13 @@ if __name__ == "__main__":
 
                     etlcontroller.safeMovement(x_hole, y_hole, init_pos[2], None)
                     summary, focus_z, fraction = etlcontroller.fullAutoFocus(127, is_double=True)   
-                    etlcontroller.saveMovement(x_hole, y_hole, focus_z, None)
+                    etlcontroller.safeMovement(x_hole, y_hole, focus_z, None)
                     # Take pic
                     position_xyzrz = etlcontroller.getPositionXYZ()
                     position_j1j2j3j4 = etlcontroller.getPositionJ1J2J3_deg()
                     x, y, z, rz = position_xyzrz
                     j1, j2, j3, j4 = position_j1j2j3j4
-                    etlcontroller.camera.changeFileName(f"Calibration_07-09-26/picture_col_{i_col}_row{i_row}_iteration{iteration}_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png")
+                    etlcontroller.camera.changeFileName(f"Calibration_08-09-26/picture_col_{i_col}_row{i_row}_iteration{iteration}_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}.png")
                     etlcontroller.camera.takePic()
     
     # # Photo on the ruller

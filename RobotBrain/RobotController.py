@@ -281,17 +281,17 @@ class RobotController:
             return False
 
         # Check the robot is in the desire position
-        if (self.position_xyz[0] - x)**2 + (self.position_xyz[1] - y)**2 + (self.position_xyz[2] - z)**2 < 0.01**2: 
-            return True
-        else:
-            print(f"Error position is not matching pos = {self.position_xyz}")
-            self.askStatus()
+        _try = 0
+        while _try <= 3:
             if (self.position_xyz[0] - x)**2 + (self.position_xyz[1] - y)**2 + (self.position_xyz[2] - z)**2 < 0.01**2: 
                 return True
-            else:
-                self.printError(f'Robot position ({self.position_xyz}) does not match the required position ({[x, y, z]})')
-                self.exit()
-                return False
+            print(f"Error position is not matching pos = {self.position_xyz}")
+            self.askStatus()
+            _try +=1
+        
+        self.printError(f'Robot position ({self.position_xyz}) does not match the required position ({[x, y, z]})')
+        self.exit()
+        return False
     ##############################################################################
 
     ##############################################################################

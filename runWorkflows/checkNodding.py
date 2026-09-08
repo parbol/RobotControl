@@ -65,9 +65,8 @@ if __name__ == "__main__":
             etlcontroller.wait_time(i_dead_time)
             name = f"{date_str}-wait_{i_dead_time}_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}"
         else:
-            name = fi"{date_str}-wait_0_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}"
+            name = f"{date_str}-wait_0_X_{x:.3f}Y_{y:.3f}Z_{z:.3f}RZ_{rz:.3f}J1_{j1:.3f}J2_{j2:.3f}J3_{j3:.3f}J4_{j4:.3f}"
         # Take pic
         etlcontroller.camera.changeFileName(f"NoddingTest/{name}.png")
         etlcontroller.camera.takePic()
-
     etlcontroller.exit()

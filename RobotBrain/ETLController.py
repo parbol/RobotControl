@@ -181,7 +181,7 @@ class ETLController:
 
         if current_plate != target_plate:
             self.changePlate(target_plate)
-        self.updateStatus()
+            self.updateStatus()
 
         # Check if changing region
         if (self.position_xyzrz[0] - self.x_limit) * (x - self.x_limit) <= 0:
@@ -194,7 +194,8 @@ class ETLController:
             self.updateStatus()
             
             self.rotateRZ(self.safe_rz)
-        self.updateStatus()
+
+            self.updateStatus()
 
         self.printLog(f"Moving to final position, (X,Y) = ({x}, {y})")
         self.robotcontroller.goTo(x, y, self.safe_z, self.position_xyzrz[3])
@@ -205,7 +206,7 @@ class ETLController:
         self.rotateRZ(rz)
         self.updateStatus()
 
-        self.printLog(f"Moving equal to final pos in (X, Y, Z, RZ)")
+        self.printLog(f"Moving equal to final pos in (X, Y, Z, RZ) = ({x}, {y}, {z}, {rz})")
         self.robotcontroller.moveEqual(x, y, z, rz)
         self.updateStatus()
         return True
