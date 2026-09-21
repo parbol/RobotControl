@@ -66,8 +66,6 @@ def load_assembly_positions(path):
 if __name__ == "__main__":
     
     parser = OptionParser(usage="%prog --help")
-    parser.add_option("-i", "--ip", dest="ip", type="string", default="192.168.0.189", help="IP of the camera server.")
-    parser.add_option("-p", "--port", dest="port", type=int, default=8080, help="Port of the camera server.")
     parser.add_option("-d", "--device", dest="device", type="string", default="/dev/ttyUSB0", help="Robot device name.")
     parser.add_option("-b", "--bauds", dest="bauds", type=int, default=115200, help="Robot bauds.")
     parser.add_option("-c", "--calibration", dest="calibration", type=str, default="ExperimentalSetup/Calibrations/calibrations.txt", help="Robot calibration file.")
@@ -94,11 +92,8 @@ if __name__ == "__main__":
     ################ END - Initialize 3D setup model
 
     ################ Initialize Connections
-    # Initialize Camera
-    robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)
-    
     # Initialize Robot
-    etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, False)
+    etlcontroller = ETLController(options.device, options.bauds, None, robot3D, False)
     etlcontroller.camera.set_exposure(0.025)
     ################ END - Initialize Connections
 

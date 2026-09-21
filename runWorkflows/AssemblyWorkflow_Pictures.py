@@ -41,7 +41,7 @@ Z_COVER = 140 # TODO - Check
 mm = 1
 
 # Corrections
-ETROC_CENTER_CORRECTION = [0.748*mm, 0.0*mm]
+ETROC_CENTER_CORRECTION = [0.0*mm, 0.748*mm]
 PCB_SHIFT_POS = [2.294*mm, 2.499*mm]
 ETROC_SIZE = [23*mm, 21*mm]
 
@@ -176,20 +176,20 @@ def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller, fiducia
         # the placement is the mean position between the corner and the center
         # XXX - Assuming pics are taken in A -> B -> C -> D order
         place_pos[f"PCB_{i_module}A"] = [
-                corners[0, 0] - PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2,
-                corners[0, 1] - PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2, theta_deg
+                corners[0, 0] + PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2,
+                corners[0, 1] + PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2, theta_deg
                 ]
         place_pos[f"PCB_{i_module}B"] = [
-                corners[1, 0] - PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2,
-                corners[1, 1] + PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2, theta_deg
+                corners[1, 0] + PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2,
+                corners[1, 1] - PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2, theta_deg
                 ]
         place_pos[f"PCB_{i_module}C"] = [
-                corners[2, 0] + PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2,
-                corners[2, 1] - PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2, theta_deg
+                corners[2, 0] - PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2,
+                corners[2, 1] + PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2, theta_deg
                 ]
         place_pos[f"PCB_{i_module}D"] = [
-                corners[3, 0] + PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2,
-                corners[3, 1] + PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2, theta_deg
+                corners[3, 0] - PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2,
+                corners[3, 1] - PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2, theta_deg
                 ]
 
     return place_pos
@@ -289,7 +289,6 @@ if __name__ == "__main__":
         # modules_to_perform_assembly = [1, 2, 3, 4]
         modules_to_perform_assembly = [1]
         # Take pictures of the fiducial marks in the ETROCs, compute and store centers
-        print("TakeFiducialMraks ETROC")
         etroc_pos = TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, options.fiducial)
         assembly_parts_position.update(etroc_pos)
         # Take pictures of the fiducial marks in the PCB, compute each PCB placement
