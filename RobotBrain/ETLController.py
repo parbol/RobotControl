@@ -53,7 +53,7 @@ class ETLController:
         # Movement information
         self.safe_z = 180
         self.safe_rz = 60
-        self.picker_tool = [-332.36, 173.79, 91.13,-161.17]
+        self.picker_tool = [-334.46, 174.59, 91.13,-161.17]
         self.safe_position = [-361.43, -421.93, self.safe_z, self.safe_rz]
         # Plate central position in angular coordinates
         # TODO - update j4
@@ -343,6 +343,7 @@ class ETLController:
         v = self.getVelocity()
         self.setVelocity(10)
         self.changeZ(self.picker_tool[2])
+        print("Turn ON EM")
         self.robotcontroller.setEM(1)
         self.setVelocity(v)
         time.sleep(1)

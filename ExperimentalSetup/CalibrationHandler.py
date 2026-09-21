@@ -3,9 +3,9 @@ import os
 
 class CalibrationHandler:
 
-    def __init__(self, name='calibrations.txt'):
+    def __init__(self, name='../Calibrations/calibrations.txt'):
 
-        self.name = '../Calibrations/' + name
+        self.name = name
         self.N = 0
         if not os.path.isdir('../Calibrations'):
             print('Calibration direction not found... creating it.')

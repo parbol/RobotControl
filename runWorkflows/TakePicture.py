@@ -50,7 +50,7 @@ if __name__ == "__main__":
     ax3.axes.set_xlim((-1.0, 1.0))
     ax3.axes.set_ylim((-1.0, 1.0))
     # The 3D model of the robot
-    robot3D = Robot(50.0, 30.0, 30.0, table, camera)
+    robot3D = Robot(50.0, 30.0, 30.0, 0, table, camera)
 
     #Initialize Camera
     robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)

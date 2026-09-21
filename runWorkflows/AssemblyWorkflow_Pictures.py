@@ -45,6 +45,11 @@ ETROC_CENTER_CORRECTION = [0.748*mm, 0.0*mm]
 PCB_SHIFT_POS = [2.294*mm, 2.499*mm]
 ETROC_SIZE = [23*mm, 21*mm]
 
+now = datetime.now()
+date_str = f"{now.year}-{now.month}-{now.day}-{now.hour}"
+PATH= f"../FiducialETROCs_{date_str}"
+os.makedirs(PATH, exist_ok=True)
+
 def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, fiducial):
     """
     Acquire fiducial mark images for ETROCs and compute their center positions
@@ -71,42 +76,46 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, fiduc
         positions = json.load(f)
 
     # Folder to store images
-    now = datetime.now()
-    date_str = f"{now.year}-{now.month}-{now.day}-{now.hour}"
-    folder_name = f"FiducialETROCs_{date_str}"
+    folder_name = f"{PATH}/FiducialETROCs"
     os.makedirs(folder_name, exist_ok=True)
 
     center_pos = {}
     # Take pic ETROCs
     for i_module in modules_to_perform_assembly:
-        for i_etroc in ["A", "B", "C", "D"]:
+        # for i_etroc in ["A", "B", "C", "D"]:
+        for i_etroc in ["A"]:
             corners = []
             print("*"*20)
             print(f" Module {i_module}")
             print(f" ETROC {i_etroc}")
             print("*"*20)
+            valid = True
             for i_corner in range(4):
                 pos = positions[str(i_module)][f"ETROC_{i_module}{i_etroc}"][i_corner]
-                print(pos)
-                corner = _locate_fiducial(etlcontroller, pos, folder_name=folder_name, part_name=f"ETROC_{i_module}{i_etroc}", is_ETROC=True)
+                print(i_corner, pos)
+                corner, i_valid = _locate_fiducial(etlcontroller, pos, folder_name=folder_name, part_name=f"ETROC_{i_module}{i_etroc}", is_ETROC=True)
+                valid = valid and i_valid
                 corners.append(corner)
 
-            # Compute center position of the ETROC
-            corners = np.asarray(corners)
-            center = np.mean(corners, axis=0) 
-            # Correct center position with nominal fiducial marks pos, I assume pads are placed up (positive y)
-            if i_etroc == "A" or i_etroc == "B":
-                # Pads in negative X 
-                center = [center[0]-ETROC_CENTER_CORRECTION[0], center[1]+ETROC_CENTER_CORRECTION[1]]
-            if i_etroc == "C" or i_etroc == "D":
-                # Pads in positive X 
-                center = [center[0]+ETROC_CENTER_CORRECTION[0], center[1]+ETROC_CENTER_CORRECTION[1]]
-            # Compute rotation angle
-            # Horizontal vectors (C-A and D-B)
-            horizontal = ((corners[2]-corners[0]) + (corners[3]-corners[1])) / 2
-            theta_rad = np.arctan2(horizontal[1], horizontal[0])
-            theta_deg = np.rad2deg(theta_rad)
-            center_pos[f"ETROC_{i_module}{i_etroc}"] = [center[0], center[1], theta_deg]
+            if valid:
+                # Compute center position of the ETROC
+                corners = np.asarray(corners)
+                center = np.mean(corners, axis=0) 
+                # Correct center position with nominal fiducial marks pos, I assume pads are placed up (positive y)
+                if i_etroc == "A" or i_etroc == "B":
+                    # Pads in negative X 
+                    center = [center[0]-ETROC_CENTER_CORRECTION[0], center[1]+ETROC_CENTER_CORRECTION[1]]
+                if i_etroc == "C" or i_etroc == "D":
+                    # Pads in positive X 
+                    center = [center[0]+ETROC_CENTER_CORRECTION[0], center[1]+ETROC_CENTER_CORRECTION[1]]
+                # Compute rotation angle
+                # Horizontal vectors (C-A and D-B)
+                horizontal = ((corners[2]-corners[0]) + (corners[3]-corners[1])) / 2
+                theta_rad = np.arctan2(horizontal[1], horizontal[0])
+                theta_deg = np.rad2deg(theta_rad)
+                center_pos[f"ETROC_{i_module}{i_etroc}"] = [center[0], center[1], theta_deg]
+            else:
+                center_pos[f"ETROC_{i_module}{i_etroc}"] = [None, None, None]
     return center_pos
 
 def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller, fiducial):
@@ -136,20 +145,23 @@ def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller, fiducia
         positions = json.load(f)
 
     # Folder to store images
-    now = datetime.now()
-    date_str = f"{now.year}-{now.month}-{now.day}-{now.hour}"
-    folder_name = f"FiducialPCBs_{date_str}"
+    folder_name = f"{PATH}/FiducialPCB"
     os.makedirs(folder_name, exist_ok=True)
 
     place_pos = {}
     # Take pic PCBs
     for i_module in modules_to_perform_assembly:
         corners = []
+        valid = True
         for i_corner in range(4):
             pos = positions[str(i_module)][f"PCB_{i_module}"][i_corner]
             print(pos)
-            corner = _locate_fiducial(etlcontroller, pos, folder_name=folder_name, part_name=f"PCB_{i_module}", is_ETROC=False)
+            corner, i_valid = _locate_fiducial(etlcontroller, pos, folder_name=folder_name, part_name=f"PCB_{i_module}", is_ETROC=False)
+            valid = valid and i_valid
             corners.append(corner)
+
+        if not valid:
+            continue
 
         # Compute center position of the ETROC
         corners = np.asarray(corners)
@@ -203,17 +215,31 @@ def _locate_fiducial(etlcontroller, pos, folder_name, part_name, is_ETROC):
     etlcontroller.camera.changeFileName(image_name)
     etlcontroller.camera.takePic()
     # Procces pic and extract center
+    print("Process pic")
     p = ProcessFiducialPoint.ProcessFiducialPoint(image_name, is_ETROC=is_ETROC)
     x_pic, y_pic, valid = p.fit()
     if not valid:
         print("Fit not valid, wrong assignment of fiducial mark")
+        return [None, None], False
     # Change from pixels to Robot Coordinates
     # XXX - I need to update robot simulation position
     etlcontroller.robot.JMoveRobotTo(position_j1j2j3j4_rad)
     x_reco_robot, y_reco_robot, z_reco_robot = etlcontroller.robot.cameraProjectionToPoint3D([x_pic, y_pic])
     print(f"Reconstructed position = {x_reco_robot}, {y_reco_robot}")
 
-    return [x_reco_robot, y_reco_robot]
+    return [x_reco_robot, y_reco_robot], True
+
+
+def save_assembly_positions(assembly_parts_position, path):
+    """
+    Write the computed assembly positions to an intermediate JSON file, so the
+    measurement phase (fiducial imaging) can be separated from the physical
+    assembly phase and re-used without repeating the camera work.
+    """
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(assembly_parts_position, f, indent=4)
+    print(f"Assembly positions written to {path}")
 
 
 
@@ -224,7 +250,7 @@ if __name__ == "__main__":
     parser.add_option("-p", "--port", dest="port", type=int, default=8080, help="Port of the camera server.")
     parser.add_option("-d", "--device", dest="device", type="string", default="/dev/ttyUSB0", help="Robot device name.")
     parser.add_option("-b", "--bauds", dest="bauds", type=int, default=115200, help="Robot bauds.")
-    parser.add_option("-c", "--calibration", dest="calibration", type=str, default="ExperimentaSetup/Calibrations/calibrations.txt", help="Robot calibration file.")
+    parser.add_option("-c", "--calibration", dest="calibration", type=str, default="ExperimentalSetup/Calibrations/calibrations.txt", help="Robot calibration file.")
     parser.add_option("-f", "--fiducial", dest="fiducial", type=str, default="runWorkflows/FiducialMarkPos.json", help="Fiducial mark positions file.")
     (options, args) = parser.parse_args()
 
@@ -243,7 +269,7 @@ if __name__ == "__main__":
                     focaldistance = cali['focaldistance'],
                     focusdistance = cali['focusdistance'])
     # The 3D model of the robot
-    robot3D =  Robot(cali['R1'], cali['R2'], cali['Z0'], table, camera)
+    robot3D =  Robot(R1=cali['R1'], R2=cali['R2'], Z0=cali['Z0'], phiOrig=cali['phiOrig'], table=table, camera=camera)
     ################ END - Initialize 3D setup model
 
     ################ Initialize Connections
@@ -252,6 +278,7 @@ if __name__ == "__main__":
     
     # Initialize Robot
     etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, False)
+    etlcontroller.camera.set_exposure(0.025)
     ################ END - Initialize Connections
 
     try:
@@ -262,36 +289,17 @@ if __name__ == "__main__":
         # modules_to_perform_assembly = [1, 2, 3, 4]
         modules_to_perform_assembly = [1]
         # Take pictures of the fiducial marks in the ETROCs, compute and store centers
+        print("TakeFiducialMraks ETROC")
         etroc_pos = TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, options.fiducial)
         assembly_parts_position.update(etroc_pos)
         # Take pictures of the fiducial marks in the PCB, compute each PCB placement
         pcb_pos = TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller, options.fiducial)
         assembly_parts_position.update(pcb_pos)
+
+        save_assembly_positions(assembly_parts_position, f"{PATH}/assembly_positions.json")
         ################ END - Position Assembly Parts
 
-        ################ Assembly
-        # Do assembly
-        # Grab picker tool if not already
-        etlcontroller.grabPickerTool()
-        # TODO
-        for i_module in modules_to_perform_assembly:
-            # for i_etroc in ["A", "B", "C", "D"]:
-            for i_etroc in ["A"]:
-                # Pick ETROC, assume orientation is ok (apart from correction)
-                etroc_pos = assembly_parts_position[f"ETROC_{i_module}{i_etroc}"]
-                print(f"Moving to grab ETROC from {etroc_pos}")
-                etlcontroller.grabAssemblyPart(etroc_pos[0], etroc_pos[1], Z_ETROCS, etroc_pos[2], f"ETROC_{i_module}{i_etroc}")
-                # Release ETROC in PCB, 1.- Move to position and apply correction angle 2.- Release
-                release_pos = assembly_parts_position[f"PCB_{i_module}{i_etroc}"]
-                print(f"Moving to release ETROC at {release_pos}")
-                etlcontroller.releaseAssemblyPart(release_pos[0], release_pos[1], Z_PCB, release_pos[2], f"PCB_{i_module}{i_etroc}")
-        
-        # Now 4 ETROCs are in each PCB
-        # Put the cover plate on top but I do not have any fiducial mark
-
     finally:
-        # Release picker tool if not already
-        etlcontroller.releasePickerTool()
         ################ END -Assembly
         # Close connection
         etlcontroller.exit()

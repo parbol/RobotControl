@@ -32,7 +32,7 @@ class ProcessFiducialPoint:
         blurred = cv2.GaussianBlur(gray, (5,5), 2)
         
         #Getting contours
-        _, thresh = cv2.threshold(blurred, 40, 255, cv2.THRESH_BINARY_INV)
+        _, thresh = cv2.threshold(blurred, 35, 255, cv2.THRESH_BINARY_INV)
         contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
         contourssorted = sorted(contours, key=cv2.contourArea, reverse=True)
@@ -124,7 +124,6 @@ class ProcessFiducialPoint:
                 axs[1].plot(c[:,0], c[:,1], 'g', linewidth=2)
         axs[1].legend()
         
-        print("Second check")
         valid = self.checkConsistency(contoursselected)
         
         if not valid:
@@ -147,7 +146,9 @@ class ProcessFiducialPoint:
         axs[2].set_title('Final estimate')
         if len(contoursselected) == 4:
             plt.plot(arrayx, arrayy, color='red')
-        plt.savefig(f"Fit_{self.imageName}")
+        new_filename = self.imageName.replace(".png", "_fit.png")
+        print(f"Saving image in {new_filename}")
+        plt.savefig(f"{new_filename}")
         return x, y, valid
 
     ##############################################################################
