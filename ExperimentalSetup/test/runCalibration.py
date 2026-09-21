@@ -20,10 +20,12 @@ def prepareInput(data, focusdistance):
     for i in data:
         #The nominal position in global coordinates. The z is taken from the measurement itself.
         #vector a contains the nominal position of the points [xn, yn, zn]
+        if abs(i[14]-932) > 20.0:
+            continue
         a = [i[0], i[1], i[4] + focusdistance]
         endog.append(a)
         #vector b contains b = [j1, j2, j3, j4, xm, ym, rm] where xm, ym and rm are the measurements x, y and radius
-        b = [i[6], i[7], i[8], i[9], i[11], i[12], i[13]]
+        b = [i[6], i[7], i[8], i[9], i[12], i[13], i[14]]
         exdog.append(b)
 
     return endog, exdog
@@ -37,9 +39,9 @@ if __name__ == "__main__":
 
     with open (options.input, 'rb') as fp:
         itemlist = pickle.load(fp)
-
     # XXX - Is the focusdistance 36?
     endog, exdog = prepareInput(itemlist, 36)
+    print(f'Number of images is: {len(endog)}')
 
     #Get calibrations
     caliHandler = CalibrationHandler('calibrations.txt')
@@ -64,7 +66,8 @@ if __name__ == "__main__":
     lhood = CameraLikelihood(endog, exdog, robot)
     res = lhood.fit()
     chi2 = lhood.check()
-    
+
+   
     #Arrangement to estimate the angle
     x = res.params[2]
     y = res.params[3]
@@ -80,9 +83,11 @@ if __name__ == "__main__":
     print(f'cameraPsi: {psi} +/- {errorPsi}')
     print(f'C: {res.params[4]} +/- {res.bse[4]}')
     print(f'Phi0_robot: {res.params[5]} +/- {res.bse[5]}')
+    print(f'R1_robot: {res.params[6]} +/- {res.bse[6]}')
+    print(f'R2_robot: {res.params[7]} +/- {res.bse[7]}')
     print('Chi2 info:')
-    print("Initial chi2:", lhood.chi2k[0], "Final chi2", chi2)
-    print('Mean distance:', np.sqrt(chi2/len(exdog)), 'mm')
+    #print("Initial chi2:", lhood.chi2k[0], "Final chi2", chi2)
+    #print('Mean distance:', np.sqrt(chi2/len(exdog)), 'mm')
     
     caliHandler.writeNewCalibration(R1 = cali['R1'], R2 = cali['R2'],
                                     Z0 = cali['Z0'], focaldistance = cali['focaldistance'],
@@ -93,4 +98,8 @@ if __name__ == "__main__":
                                     cameraZ = cali['cameraZ'],
                                     cameraPsi = psi, phiOrig = res.params[5])
 
+
+
+    for i in chi2:
+        print(i)
    
