@@ -343,7 +343,7 @@ class ETLController:
         v = self.getVelocity()
         self.setVelocity(10)
         self.changeZ(self.picker_tool[2])
-        print("Turn ON EM")
+        self.printLog("Turn ON EM")
         self.robotcontroller.setEM(1)
         self.setVelocity(v)
         time.sleep(1)
@@ -385,11 +385,15 @@ class ETLController:
         self.safeMovement(x, y, safe_pos[2], safe_pos[3])
         self.updateStatus()
         # Step in RZ to correct rotation
+        self.safeMovement(x, y, safe_pos[2], part_rotation_rz)
         self.stepRZ(part_rotation_rz)
         self.updateStatus()
         
         is_picked = False
+        v = self.getVelocity()
         while not is_picked:
+            self.changeZ(z+10)
+            self.setVelocity(10)
             self.changeZ(z)
             # Open Tool valves
             self.printLog("Openning tool valves")
@@ -402,9 +406,11 @@ class ETLController:
             time.sleep(2)
 
             self.updateStatus()
+            self.changeZ(z+10)
+            self.setVelocity(v)
             self.changeZ(self.safe_z)
 
-            result = input("Do you need to repeat the picking up process? (y/n)")
+            result = input("Do you need to repeat the picking up process? (y/n) ")
             if result.upper() == "N":
                 is_picked = True
         return True
@@ -427,9 +433,12 @@ class ETLController:
         self.safeMovement(x, y, safe_pos[2], safe_pos[3])
         self.updateStatus()
         # Step in RZ to correct rotation
-        self.stepRZ(part_rotation_rz)
+        self.safeMovement(x, y, safe_pos[2], part_rotation_rz)
         self.updateStatus()
         # Go down
+        v = self.getVelocity()
+        self.changeZ(z+10)
+        self.setVelocity(10)
         self.changeZ(z)
         self.updateStatus()
         # Close Tool valves
@@ -438,8 +447,10 @@ class ETLController:
         self.robotcontroller.setValves(valves)
         time.sleep(2)
         # Move up
-        self.updateStatus()
+        self.changeZ(z+10)
+        self.setVelocity(v)
         self.changeZ(self.safe_z)
+        self.updateStatus()
         return True
 
     ##############################################################################

@@ -94,8 +94,7 @@ if __name__ == "__main__":
     ################ Initialize Connections
     # Initialize Robot
     etlcontroller = ETLController(options.device, options.bauds, None, robot3D, False)
-    etlcontroller.camera.set_exposure(0.025)
-    ################ END - Initialize Connections
+    ############### END - Initialize Connections
 
     try:
         ################ Assembly

@@ -21,7 +21,7 @@ class ProcessFiducialPoint:
         self.WARNING = '\033[93m'
         self.printLog('Start calibration point')
 
-    def selectContour_ETROC(self):
+    def selectContour_ETROC(self, th=35):
         self.printLog('Starting the fit with image ' + self.imageName)
         
         
@@ -32,7 +32,7 @@ class ProcessFiducialPoint:
         blurred = cv2.GaussianBlur(gray, (5,5), 2)
         
         #Getting contours
-        _, thresh = cv2.threshold(blurred, 35, 255, cv2.THRESH_BINARY_INV)
+        _, thresh = cv2.threshold(blurred, th, 255, cv2.THRESH_BINARY_INV)
         contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
         contourssorted = sorted(contours, key=cv2.contourArea, reverse=True)
@@ -51,7 +51,7 @@ class ProcessFiducialPoint:
         # return contoursselected, contourssorted, gray, thresh
         return contoursselected, contourssorted, blurred, thresh
 
-    def selectContour_PCB(self):
+    def selectContour_PCB(self, th=150):
         self.printLog('Starting the fit with image ' + self.imageName)
         
         
@@ -62,7 +62,7 @@ class ProcessFiducialPoint:
         blurred = cv2.GaussianBlur(gray, (5,5), 2)
         
         #Getting contours
-        _, thresh = cv2.threshold(blurred, 150, 255, cv2.THRESH_BINARY_INV)
+        _, thresh = cv2.threshold(blurred, th, 255, cv2.THRESH_BINARY_INV)
         contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
         contourssorted = sorted(contours, key=cv2.contourArea, reverse=True)
@@ -84,12 +84,14 @@ class ProcessFiducialPoint:
             return contourssorted[1:2], contourssorted, blurred, thresh
 
 
-    def fit(self):
+    def fit(self, th):
         # Get contours
         if self.is_ETROC:
-            contoursselected, contourssorted, gray, thresh = self.selectContour_ETROC()
+            # th = 35
+            contoursselected, contourssorted, gray, thresh = self.selectContour_ETROC(th)
         else:
-            contoursselected, contourssorted, gray, thresh = self.selectContour_PCB()
+            # th = 150
+            contoursselected, contourssorted, gray, thresh = self.selectContour_PCB(th)
 
 
         #Figure 
@@ -127,9 +129,11 @@ class ProcessFiducialPoint:
         valid = self.checkConsistency(contoursselected)
         
         if not valid:
-            plt.show()
-            self.printError('Pattern recognition unsuccessfull')
-            return 0, 0, False
+            print("Fit failed, try to reduce threshold")
+            th = th - 5
+            if th <= 15:
+                return 0, 0, False
+            self.fit(th)
 
         if len(contoursselected) == 4:
             arrayx, arrayy, x, y, d, valid = self.estimateDistances(contoursselected)

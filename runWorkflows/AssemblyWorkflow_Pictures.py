@@ -82,8 +82,8 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, fiduc
     center_pos = {}
     # Take pic ETROCs
     for i_module in modules_to_perform_assembly:
-        # for i_etroc in ["A", "B", "C", "D"]:
-        for i_etroc in ["A"]:
+        for i_etroc in ["A", "B", "C", "D"]:
+        # for i_etroc in ["A"]:
             corners = []
             print("*"*20)
             print(f" Module {i_module}")
@@ -155,7 +155,7 @@ def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller, fiducia
         valid = True
         for i_corner in range(4):
             pos = positions[str(i_module)][f"PCB_{i_module}"][i_corner]
-            print(pos)
+            print(i_corner, pos)
             corner, i_valid = _locate_fiducial(etlcontroller, pos, folder_name=folder_name, part_name=f"PCB_{i_module}", is_ETROC=False)
             valid = valid and i_valid
             corners.append(corner)
@@ -215,9 +215,12 @@ def _locate_fiducial(etlcontroller, pos, folder_name, part_name, is_ETROC):
     etlcontroller.camera.changeFileName(image_name)
     etlcontroller.camera.takePic()
     # Procces pic and extract center
-    print("Process pic")
     p = ProcessFiducialPoint.ProcessFiducialPoint(image_name, is_ETROC=is_ETROC)
-    x_pic, y_pic, valid = p.fit()
+    if is_ETROC:
+        th = 35
+    else:
+        th = 150
+    x_pic, y_pic, valid = p.fit(th)
     if not valid:
         print("Fit not valid, wrong assignment of fiducial mark")
         return [None, None], False
@@ -297,6 +300,9 @@ if __name__ == "__main__":
 
         save_assembly_positions(assembly_parts_position, f"{PATH}/assembly_positions.json")
         ################ END - Position Assembly Parts
+    except:
+        Exception as e:
+            print(e)
 
     finally:
         ################ END -Assembly
