@@ -38,9 +38,12 @@ SAFE_Z = 180
 mm = 1
 
 # Corrections
-ETROC_CENTER_CORRECTION = [0.748*mm, 0.0*mm]
-PCB_SHIFT_POS = [2.294*mm, 2.499*mm]
+# ETROC_CENTER_CORRECTION = [0.748*mm, 0.00*mm]
+ETROC_CENTER_CORRECTION = [0.778*mm, 0.04*mm]
+# PCB_SHIFT_POS = [2.294*mm, 2.499*mm]
+PCB_SHIFT_POS = [2.42*mm, 2.48*mm]
 ETROC_SIZE = [23*mm, 21*mm]
+MARGIN = [0.5*mm, 0.5*mm]
 
 now = datetime.now()
 date_str = f"{now.year}-{now.month}-{now.day}-{now.hour}"
@@ -79,8 +82,8 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, fiduc
     center_pos = {}
     # Take pic ETROCs
     for i_module in modules_to_perform_assembly:
-        for i_etroc in ["A", "B", "C", "D"]:
-        # for i_etroc in ["A"]:
+        # for i_etroc in ["A", "B", "C", "D"]:
+        for i_etroc in ["A"]:
             corners = []
             print("*"*20)
             print(f" Module {i_module}")
@@ -101,7 +104,7 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, fiduc
                 # Correct center position with nominal fiducial marks pos, I assume pads are placed up (positive y)
                 if i_etroc == "A" or i_etroc == "B":
                     # Pads in negative X 
-                    center = [center[0]-ETROC_CENTER_CORRECTION[0], center[1]+ETROC_CENTER_CORRECTION[1]]
+                    center = [center[0]-ETROC_CENTER_CORRECTION[0], center[1]-ETROC_CENTER_CORRECTION[1]]
                 if i_etroc == "C" or i_etroc == "D":
                     # Pads in positive X 
                     center = [center[0]+ETROC_CENTER_CORRECTION[0], center[1]+ETROC_CENTER_CORRECTION[1]]
@@ -173,25 +176,32 @@ def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller, fiducia
         # the placement is the mean position between the corner and the center
         # XXX - Assuming pics are taken in A -> B -> C -> D order
         place_pos[f"PCB_{i_module}A"] = [
-                corners[0, 0] + PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2,
-                corners[0, 1] + PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2, theta_deg
+                corners[0, 0] + PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2 + MARGIN[0],
+                corners[0, 1] + PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2 - MARGIN[1], theta_deg
                 ]
         place_pos[f"PCB_{i_module}B"] = [
-                corners[1, 0] + PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2,
-                corners[1, 1] - PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2, theta_deg
+                corners[1, 0] + PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2 + MARGIN[0],
+                corners[1, 1] - PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2 + MARGIN[0], theta_deg
                 ]
         place_pos[f"PCB_{i_module}C"] = [
-                corners[2, 0] - PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2,
-                corners[2, 1] + PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2, theta_deg
+                corners[2, 0] - PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2 - MARGIN[0],
+                corners[2, 1] + PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2 - MARGIN[0], theta_deg
                 ]
         place_pos[f"PCB_{i_module}D"] = [
-                corners[3, 0] - PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2,
-                corners[3, 1] - PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2, theta_deg
+                corners[3, 0] - PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2 - MARGIN[0],
+                corners[3, 1] - PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2 + MARGIN[0], theta_deg
                 ]
 
     return place_pos
 
 def _locate_fiducial(etlcontroller, pos, folder_name, part_name, is_ETROC):
+
+    if is_ETROC:
+        th = 55
+        etlcontroller.camera.set_exposure(0.03)
+    else:
+        th = 150
+        etlcontroller.camera.set_exposure(0.025)
     x = pos["x"]
     y = pos["y"]
     z = pos["z"]
@@ -213,10 +223,6 @@ def _locate_fiducial(etlcontroller, pos, folder_name, part_name, is_ETROC):
     etlcontroller.camera.takePic()
     # Procces pic and extract center
     p = ProcessFiducialPoint.ProcessFiducialPoint(image_name, is_ETROC=is_ETROC)
-    if is_ETROC:
-        th = 35
-    else:
-        th = 150
     x_pic, y_pic, valid = p.fit(th)
     if not valid:
         print("Fit not valid, wrong assignment of fiducial mark")
@@ -297,9 +303,8 @@ if __name__ == "__main__":
 
         save_assembly_positions(assembly_parts_position, f"{PATH}/assembly_positions.json")
         ################ END - Position Assembly Parts
-    except:
-        Exception as e:
-            print(e)
+    except Exception as e:
+        print(e)
 
     finally:
         ################ END -Assembly

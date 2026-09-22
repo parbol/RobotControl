@@ -34,7 +34,7 @@ import ImageAnalysis.ProcessFiducialPoint as ProcessFiducialPoint
 ## Constants
 SAFE_Z = 180
 Z_ETROCS = 125 
-Z_PCB = 138
+Z_PCB = 147
 Z_COVER = 140 # TODO - Check
 
 # Units
@@ -120,6 +120,8 @@ if __name__ == "__main__":
         
         # Now 4 ETROCs are in each PCB
         # Put the cover plate on top but I do not have any fiducial mark
+    except Exception as e:
+        print(e)
 
     finally:
         # Release picker tool if not already

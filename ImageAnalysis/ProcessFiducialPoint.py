@@ -101,7 +101,7 @@ class ProcessFiducialPoint:
         axs[0].set_title('Original image')
         # Draw binary image with contours
         axs[1].imshow(thresh, cmap='gray')
-        axs[1].set_title('Thresholded image')
+        axs[1].set_title(f'Thresholded image th={th}')
         
         _is_first_contour = True
         for i, c in enumerate(contourssorted):
@@ -130,10 +130,14 @@ class ProcessFiducialPoint:
         
         if not valid:
             print("Fit failed, try to reduce threshold")
+            new_filename = self.imageName.replace(".png", f"_fit_th{th}.png")
+            print(f"Saving image in {new_filename}")
+            plt.savefig(f"{new_filename}")
             th = th - 5
             if th <= 15:
                 return 0, 0, False
-            self.fit(th)
+            return self.fit(th)
+            
 
         if len(contoursselected) == 4:
             arrayx, arrayy, x, y, d, valid = self.estimateDistances(contoursselected)
@@ -141,7 +145,6 @@ class ProcessFiducialPoint:
             M = cv2.moments(contoursselected[0])
             x = int(M['m10']/M['m00'])
             y = int(M['m01']/M['m00'])
-
         
         # Drawing final
         circle = plt.Circle((x,y), 10, color='green', fill=True)
@@ -150,7 +153,7 @@ class ProcessFiducialPoint:
         axs[2].set_title('Final estimate')
         if len(contoursselected) == 4:
             plt.plot(arrayx, arrayy, color='red')
-        new_filename = self.imageName.replace(".png", "_fit.png")
+        new_filename = self.imageName.replace(".png", f"_fit_th{th}.png")
         print(f"Saving image in {new_filename}")
         plt.savefig(f"{new_filename}")
         return x, y, valid
@@ -160,6 +163,7 @@ class ProcessFiducialPoint:
         if len(c) == 4:
             for i in range(len(c)):
                 area = cv2.contourArea(c[i])
+                print(area)
                 if area < 15000.0 or area > 35000.0:
                     print(f"Not right area {area}")
                     return False

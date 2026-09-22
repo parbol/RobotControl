@@ -276,8 +276,11 @@ class ETLController:
     ##############################################################################
     def changeZ(self, z):
         self.updateStatus()
-        self.printLog(f"Moving to z = {z}")
         # XXX - Define a range of safe z?
+        if z > 180:
+            z = 180
+
+        self.printLog(f"Moving to z = {z}")
         self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], z, self.position_xyzrz[3])
         self.updateStatus()
         return True
@@ -392,8 +395,8 @@ class ETLController:
         is_picked = False
         v = self.getVelocity()
         while not is_picked:
-            self.changeZ(z+10)
-            self.setVelocity(10)
+            self.changeZ(z+15)
+            self.setVelocity(5)
             self.changeZ(z)
             # Open Tool valves
             self.printLog("Openning tool valves")
@@ -406,7 +409,7 @@ class ETLController:
             time.sleep(2)
 
             self.updateStatus()
-            self.changeZ(z+10)
+            self.changeZ(z+15)
             self.setVelocity(v)
             self.changeZ(self.safe_z)
 
@@ -437,8 +440,8 @@ class ETLController:
         self.updateStatus()
         # Go down
         v = self.getVelocity()
-        self.changeZ(z+10)
-        self.setVelocity(10)
+        self.changeZ(z+15)
+        self.setVelocity(5)
         self.changeZ(z)
         self.updateStatus()
         # Close Tool valves
@@ -447,7 +450,7 @@ class ETLController:
         self.robotcontroller.setValves(valves)
         time.sleep(2)
         # Move up
-        self.changeZ(z+10)
+        self.changeZ(z+15)
         self.setVelocity(v)
         self.changeZ(self.safe_z)
         self.updateStatus()

@@ -4,5 +4,5 @@ import ImageAnalysis.ProcessFiducialPoint as ProcessFiducialPoint
 
 if __name__=='__main__':
 
-    p = ProcessFiducialPoint.ProcessFiducialPoint('../FiducialETROCs_2026-9-21-17/FiducialETROCs/ETROC_1BX_-249.840Y_-350.420Z_158.545RZ_114.610J1_-91.757J2_-95.280J3_158.545J4_72.427.png', True)
-    x, y, valid = p.fit(th=35)
+    p = ProcessFiducialPoint.ProcessFiducialPoint('../ETROC_1AX_-264.240Y_-350.420Z_158.612RZ_114.610J1_-93.917J2_-92.949J3_158.612J4_72.256.png', True)
+    x, y, valid = p.fit(th=100)
