@@ -33,15 +33,12 @@ import ImageAnalysis.ProcessFiducialPoint as ProcessFiducialPoint
 
 ## Constants
 SAFE_Z = 180
-Z_ETROCS = 125 
-Z_PCB = 138
-Z_COVER = 140 # TODO - Check
 
 # Units
 mm = 1
 
 # Corrections
-ETROC_CENTER_CORRECTION = [0.0*mm, 0.748*mm]
+ETROC_CENTER_CORRECTION = [0.748*mm, 0.0*mm]
 PCB_SHIFT_POS = [2.294*mm, 2.499*mm]
 ETROC_SIZE = [23*mm, 21*mm]
 
