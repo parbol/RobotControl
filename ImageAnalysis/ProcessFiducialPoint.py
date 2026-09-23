@@ -33,6 +33,12 @@ class ProcessFiducialPoint:
         
         #Getting contours
         _, thresh = cv2.threshold(blurred, th, 255, cv2.THRESH_BINARY_INV)
+        # Close small gaps in the contours
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+
+        # Getting contours
         contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
         contourssorted = sorted(contours, key=cv2.contourArea, reverse=True)
@@ -63,6 +69,13 @@ class ProcessFiducialPoint:
         
         #Getting contours
         _, thresh = cv2.threshold(blurred, th, 255, cv2.THRESH_BINARY_INV)
+
+        # Close small gaps in the contours
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+
+        # Getting contours
         contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
         contourssorted = sorted(contours, key=cv2.contourArea, reverse=True)
