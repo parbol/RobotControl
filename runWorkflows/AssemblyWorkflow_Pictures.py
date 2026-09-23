@@ -207,7 +207,7 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, fiduc
     # Take pic ETROCs
     for i_module in modules_to_perform_assembly:
         # for i_etroc in ["A", "B", "C", "D"]:
-        for i_etroc in ["A"]:
+        for i_etroc in ["D"]:
             corners = []
             print("*"*20)
             print(f" Module {i_module}")
@@ -301,15 +301,15 @@ def ComputePlacement_PCB(corners: np.array, module):
             ]
     place_pos[f"PCB_{module}B"] = [
             corners[1, 0] + PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2 + MARGIN[0],
-            corners[1, 1] - PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2 + MARGIN[0], theta_deg
+            corners[1, 1] - PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2 + MARGIN[1], theta_deg
             ]
     place_pos[f"PCB_{module}C"] = [
             corners[2, 0] - PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2 - MARGIN[0],
-            corners[2, 1] + PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2 - MARGIN[0], theta_deg
+            corners[2, 1] + PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2 - MARGIN[1], theta_deg
             ]
     place_pos[f"PCB_{module}D"] = [
             corners[3, 0] - PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2 - MARGIN[0],
-            corners[3, 1] - PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2 + MARGIN[0], theta_deg
+            corners[3, 1] - PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2 + MARGIN[1], theta_deg
             ]
     return place_pos
 
