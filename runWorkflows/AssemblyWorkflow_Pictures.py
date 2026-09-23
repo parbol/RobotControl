@@ -50,6 +50,130 @@ date_str = f"{now.year}-{now.month}-{now.day}-{now.hour}"
 PATH= f"../FiducialETROCs_{date_str}"
 os.makedirs(PATH, exist_ok=True)
 
+def run_retakes(retake, etlcontroller, fiducial):
+    """
+    Execute picture retakes
+    """
+    single_retake = retake.split(",")
+    results = {}
+
+    for i_single_retake in single_retake:
+        parts = i_single_retake.split(":")
+
+        if parts[0] == "ETROC" and len(parts)==4:
+            _, module, letter, corner = parts
+            results[i_single_retake] = RetakeFiducialCorner_ETROC(int(module), letter, int(corner), etlcontroller, fiducial)
+
+        elif parts[0] == "PCB" and len(parts)==3:
+            _, module, corner = parts
+            results[i_single_retake] = RetakeFiducialCorner_PCB(int(module), int(corner), etlcontroller, fiducial)
+
+        else:
+            raise ValueError(f"Not valid format for retake: {i_single_retake}. It should be 'ETROC:<Module>:<Letter>:<Corner>' or 'PCB:<Module>:<Corner>'")
+
+    return results
+
+def _load_corners_json(folder_name):
+    path = f"{folder_name}/_raw_corners.json"
+    if os.path.exists(path):
+        with open(path) as f:
+            return json.load(f)
+    return {}
+
+def _save_corners_json(folder_name, data):
+    with open(f"{folder_name}/_raw_corners.json", "w") as f:
+        json.dump(data, f, indent=4)
+
+def _corners_all_valid(corners):
+    """
+    Return True if 4 corners are valid pics
+    """
+    return all(c is not None and c[0] is not None and c[1] is not None for c in corners)
+
+def _update_assembly_positions_file(key, value, path=None):
+    """
+    Patch a single key inside the final assembly_positions.json, without
+    touching the rest of the file. If the file does not exist yet, nothing
+    is written to disk (the caller still gets the recomputed value back).
+    """
+    path = path or f"{PATH}/assembly_positions.json"
+    if not os.path.exists(path):
+        print(f"No existe todavia {path}; no se ha actualizado nada en disco, "
+              f"solo se devuelve el valor recalculado de {key}.")
+        return
+    with open(path) as f:
+        data = json.load(f)
+    data[key] = value
+    with open(path, "w") as f:
+        json.dump(data, f, indent=4)
+    print(f"Actualizado {key} en {path}")
+
+
+def RetakeFiducialCorner_ETROC(module: int, letter: str, corner: int, etlcontroller, fiducial):
+    """
+    Repeats a single corner and recomputes the center and rotation of this ETROC
+
+    Parameters
+    ----------
+    module : int
+        Module number (1, 2, 3 o 4).
+    etroc_letter : str
+        "A", "B", "C" o "D".
+    corner_index : int
+        Index of the corner to repeat (0, 1, 2 o 3).
+    etlcontroller : object
+    fiducial : str
+        File with fiducial marks positions.
+
+    Returns
+    ----------
+    list[float] | None
+        [x, y, rotation] recomputed from new pic or None if not valid photo
+    """
+
+    with open(fiducial) as f:
+        positions = json.load(f)
+
+    folder_name = f"{PATH}/FiducialETROCs"
+    part_name = f"ETROC_{module}{letter}"
+
+    raw_corners = _load_corners_json(folder_name)
+    if part_name not in raw_corners:
+        raise RuntimeError(f"No previous corner saved for {part_name}; you need to run first the whole pictures")
+
+    pos = positions[str(module)][part_name][corner]
+    print(f"Repeating conrner {corner} of {part_name}")
+    new_corner, valid = _locate_fiducial(etlcontroller, pos, folder_name=folder_name, part_name=part_name, is_ETROC=True)
+    if not valid:
+        print("Not valid pic.")
+        return None
+
+    raw_corners[part_name][corner] = new_corner
+    _save_corners_json(folder_name, raw_corners)
+
+    if not _corners_all_valid(raw_corners[part_name]):
+        pending = [i for i, c in enumerate(raw_corners[part_name])
+                   if c is None or c[0] is None or c[1] is None]
+        print(f"Corner {corner} of {part_name} saved, but you still need to retake {pending}; center not recomputed")
+        return None
+
+    # Recompute center
+    result = ComputeCenter_ETROC(np.asarray(raw_corners[part_name]), letter)
+    _update_assembly_positions_file(part_name, result)
+    return result
+
+def ComputeCenter_ETROC(corners: np.array, etroc_letter):
+    center = np.mean(corners, axis=0)
+    if etroc_letter in ("A", "B"):
+        center = [center[0] - ETROC_CENTER_CORRECTION[0], center[1] - ETROC_CENTER_CORRECTION[1]]
+    else:
+        center = [center[0] + ETROC_CENTER_CORRECTION[0], center[1] + ETROC_CENTER_CORRECTION[1]]
+    horizontal = ((corners[2] - corners[0]) + (corners[3] - corners[1])) / 2
+    theta_deg = np.rad2deg(np.arctan2(horizontal[1], horizontal[0]))
+
+    result = [center[0], center[1], theta_deg]
+    return result
+
 def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, fiducial):
     """
     Acquire fiducial mark images for ETROCs and compute their center positions
@@ -97,26 +221,97 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, fiduc
                 valid = valid and i_valid
                 corners.append(corner)
 
+            # Store raw corners
+            raw_corners = _load_corners_json(folder_name)
+            raw_corners[f"ETROC_{i_module}{i_etroc}"] = corners
+            _save_corners_json(folder_name, raw_corners)
+
             if valid:
                 # Compute center position of the ETROC
-                corners = np.asarray(corners)
-                center = np.mean(corners, axis=0) 
-                # Correct center position with nominal fiducial marks pos, I assume pads are placed up (positive y)
-                if i_etroc == "A" or i_etroc == "B":
-                    # Pads in negative X 
-                    center = [center[0]-ETROC_CENTER_CORRECTION[0], center[1]-ETROC_CENTER_CORRECTION[1]]
-                if i_etroc == "C" or i_etroc == "D":
-                    # Pads in positive X 
-                    center = [center[0]+ETROC_CENTER_CORRECTION[0], center[1]+ETROC_CENTER_CORRECTION[1]]
-                # Compute rotation angle
-                # Horizontal vectors (C-A and D-B)
-                horizontal = ((corners[2]-corners[0]) + (corners[3]-corners[1])) / 2
-                theta_rad = np.arctan2(horizontal[1], horizontal[0])
-                theta_deg = np.rad2deg(theta_rad)
-                center_pos[f"ETROC_{i_module}{i_etroc}"] = [center[0], center[1], theta_deg]
+                result = ComputeCenter_ETROC(np.asarray(corners), i_etroc)
+                center_pos[f"ETROC_{i_module}{i_etroc}"] = result
             else:
                 center_pos[f"ETROC_{i_module}{i_etroc}"] = [None, None, None]
     return center_pos
+
+def RetakeFiducialCorner_PCB(module: int, corner: int, etlcontroller, fiducial):
+    """
+    Repeats a single corner and recomputes placement position and rotation of this PCB
+
+    Parameters
+    ----------
+    module : int
+        Module number (1, 2, 3 o 4).
+    corner_index : int
+        Index of the corner to repeat (0, 1, 2 o 3).
+    etlcontroller : object
+    fiducial : str
+        File with fiducial marks positions.
+
+    Returns
+    ----------
+    dict | None
+        {"PCB_moduleA: [x, y, rotation],...} recomputed from new pic or None if not valid photo
+    """
+
+    with open(fiducial) as f:
+        positions = json.load(f)
+
+    folder_name = f"{PATH}/FiducialPCB"
+    part_name = f"PCB_{module}"
+
+    raw_corners = _load_corners_json(folder_name)
+    if part_name not in raw_corners:
+        raise RuntimeError(f"No previous corner saved for {part_name}; you need to run first the whole pictures")
+
+    pos = positions[str(module)][part_name][corner]
+    print(f"Repeating corner {corner} of {part_name}")
+    new_corner, valid = _locate_fiducial(etlcontroller, pos, folder_name=folder_name, part_name=part_name, is_ETROC=False)
+    if not valid:
+        print("Not valid pic.")
+        return None
+
+    raw_corners[part_name][corner] = new_corner
+    _save_corners_json(folder_name, raw_corners)
+
+    if not _corners_all_valid(raw_corners[part_name]):
+        pending = [i for i, c in enumerate(raw_corners[part_name])
+                   if c is None or c[0] is None or c[1] is None]
+        print(f"Corner {corner} of {part_name} saved, but you still need to retake {pending}; placement not recomputed")
+        return None
+
+    # Recompute placement
+    result = ComputePlacement_PCB(np.asarray(raw_corners[part_name]), module)
+    for key, value in result.items():
+        _update_assembly_positions_file(key, value)
+    return result
+
+def ComputePlacement_PCB(corners: np.array, module):
+    place_pos = {}
+    horizontal = ((corners[2]-corners[0]) + (corners[3]-corners[1])) / 2
+    theta_rad = np.arctan2(horizontal[1], horizontal[0])
+    theta_deg = np.rad2deg(theta_rad)
+    # center_pos[f"PCB_{i_module}"] = [center[0], center[1], theta_deg]
+    # Compute placement of each module in the PCB
+    # the placement is the mean position between the corner and the center
+    # XXX - Assuming pics are taken in A -> B -> C -> D order
+    place_pos[f"PCB_{module}A"] = [
+            corners[0, 0] + PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2 + MARGIN[0],
+            corners[0, 1] + PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2 - MARGIN[1], theta_deg
+            ]
+    place_pos[f"PCB_{module}B"] = [
+            corners[1, 0] + PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2 + MARGIN[0],
+            corners[1, 1] - PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2 + MARGIN[0], theta_deg
+            ]
+    place_pos[f"PCB_{module}C"] = [
+            corners[2, 0] - PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2 - MARGIN[0],
+            corners[2, 1] + PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2 - MARGIN[0], theta_deg
+            ]
+    place_pos[f"PCB_{module}D"] = [
+            corners[3, 0] - PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2 - MARGIN[0],
+            corners[3, 1] - PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2 + MARGIN[0], theta_deg
+            ]
+    return place_pos
 
 def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller, fiducial):
     """
@@ -159,39 +354,18 @@ def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller, fiducia
             corner, i_valid = _locate_fiducial(etlcontroller, pos, folder_name=folder_name, part_name=f"PCB_{i_module}", is_ETROC=False)
             valid = valid and i_valid
             corners.append(corner)
+        # Store raw corners
+        raw_corners = _load_corners_json(folder_name)
+        raw_corners[f"PCB_{i_module}"] = corners
+        _save_corners_json(folder_name, raw_corners)
 
         if not valid:
             continue
 
         # Compute center position of the ETROC
         corners = np.asarray(corners)
-        # center = np.mean(corners, axis=0)
-        # Compute rotation angle
-        # Horizontal vectors (C-A and D-B)
-        horizontal = ((corners[2]-corners[0]) + (corners[3]-corners[1])) / 2
-        theta_rad = np.arctan2(horizontal[1], horizontal[0])
-        theta_deg = np.rad2deg(theta_rad)
-        # center_pos[f"PCB_{i_module}"] = [center[0], center[1], theta_deg]
-        # Compute placement of each module in the PCB
-        # the placement is the mean position between the corner and the center
-        # XXX - Assuming pics are taken in A -> B -> C -> D order
-        place_pos[f"PCB_{i_module}A"] = [
-                corners[0, 0] + PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2 + MARGIN[0],
-                corners[0, 1] + PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2 - MARGIN[1], theta_deg
-                ]
-        place_pos[f"PCB_{i_module}B"] = [
-                corners[1, 0] + PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2 + MARGIN[0],
-                corners[1, 1] - PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2 + MARGIN[0], theta_deg
-                ]
-        place_pos[f"PCB_{i_module}C"] = [
-                corners[2, 0] - PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2 - MARGIN[0],
-                corners[2, 1] + PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2 - MARGIN[0], theta_deg
-                ]
-        place_pos[f"PCB_{i_module}D"] = [
-                corners[3, 0] - PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2 - MARGIN[0],
-                corners[3, 1] - PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2 + MARGIN[0], theta_deg
-                ]
-
+        pos = ComputePlacement_PCB(np.asarray(corners), i_module)
+        place_pos.update(pos)
     return place_pos
 
 def _locate_fiducial(etlcontroller, pos, folder_name, part_name, is_ETROC):
@@ -258,6 +432,7 @@ if __name__ == "__main__":
     parser.add_option("-b", "--bauds", dest="bauds", type=int, default=115200, help="Robot bauds.")
     parser.add_option("-c", "--calibration", dest="calibration", type=str, default="ExperimentalSetup/Calibrations/calibrations.txt", help="Robot calibration file.")
     parser.add_option("-f", "--fiducial", dest="fiducial", type=str, default="runWorkflows/FiducialMarkPos.json", help="Fiducial mark positions file.")
+    parser.add_option("--retake", dest="retake", type=str, default=None, help="Retakes photos instead of running whole workflow. Syntax is: 'ETROC:<hybrid>:<letter>:<corner>' or 'PCB:<module>:<corner>'. To use various at the same time separate them with comas.")
     (options, args) = parser.parse_args()
 
     ################ Initialize 3D setup model
@@ -288,21 +463,28 @@ if __name__ == "__main__":
     ################ END - Initialize Connections
 
     try:
+        ################ Retake
+        if options.retake:
+            results = run_retakes(options.retake, etlcontroller, options.fiducial)
+            print(f"Recomputed results: {results}")
+        ################ END - Retake
+
         ################ Position Assembly Parts
-        # Initialize position of assembly parts
-        assembly_parts_position = {}
+        else:
+            # Initialize position of assembly parts
+            assembly_parts_position = {}
 
-        # modules_to_perform_assembly = [1, 2, 3, 4]
-        modules_to_perform_assembly = [1]
-        # Take pictures of the fiducial marks in the ETROCs, compute and store centers
-        etroc_pos = TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, options.fiducial)
-        assembly_parts_position.update(etroc_pos)
-        # Take pictures of the fiducial marks in the PCB, compute each PCB placement
-        pcb_pos = TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller, options.fiducial)
-        assembly_parts_position.update(pcb_pos)
+            # modules_to_perform_assembly = [1, 2, 3, 4]
+            modules_to_perform_assembly = [1]
+            # Take pictures of the fiducial marks in the ETROCs, compute and store centers
+            etroc_pos = TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, options.fiducial)
+            assembly_parts_position.update(etroc_pos)
+            # Take pictures of the fiducial marks in the PCB, compute each PCB placement
+            pcb_pos = TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller, options.fiducial)
+            assembly_parts_position.update(pcb_pos)
 
-        save_assembly_positions(assembly_parts_position, f"{PATH}/assembly_positions.json")
-        ################ END - Position Assembly Parts
+            save_assembly_positions(assembly_parts_position, f"{PATH}/assembly_positions.json")
+         ################ END - Position Assembly Parts
     except Exception as e:
         print(e)
 
