@@ -1,10 +1,19 @@
 import ImageAnalysis.ProcessCalibrationPoint as ProcessCalibrationPoint
 import os
+from optparse import OptionParser
 import pickle
 import sys
 from matplotlib import pyplot as plt
 import numpy as np
 
+
+class bcolors:
+    NORMAL = '\033[0m'
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
 
 #################################################################
 def getAllNominalPoints():
@@ -27,7 +36,9 @@ def parseFileName(i):
     c1col = i.find('col_') + 4
     c2col = i.find('_row') 
     c1row = i.find('_row') + 4
-    c2row = i.find('_X') 
+    c2row = i.find('_iteration') 
+    c1iteration = i.find('_iteration') + 10
+    c2iteration = i.find('_X')
     c1X = i.find('X_') + 2
     c2X = i.find('Y_')
     c1Y = c2X + 2
@@ -46,6 +57,7 @@ def parseFileName(i):
     c2J4 = i.find('.png')
     col = int(i[c1col:c2col])
     row = int(i[c1row:c2row])
+    it = int(i[c1iteration:c2iteration])
     x = float(i[c1X:c2X])
     y = float(i[c1Y:c2Y])
     z = float(i[c1Z:c2Z])
@@ -55,12 +67,12 @@ def parseFileName(i):
     j3 = float(i[c1J3:c2J3])
     j4 = float(i[c1J4:c2J4])
 
-    return col, row, x, y, z, rz, j1, j2, j3, j4
+    return col, row, it, x, y, z, rz, j1, j2, j3, j4
 #################################################################
 
 
 #################################################################
-def matchPoints(dirname):
+def matchPoints(dirname, threshold):
 
     firstPointX = -132.0 + 22 * 12.0
     firstPointY = -222.0 - 29 * 12.0
@@ -70,12 +82,13 @@ def matchPoints(dirname):
     for i in os.listdir(dirname):
         if 'J1' not in i:
             continue
-        col, row, x_, y_, z_, rz_, j1_, j2_, j3_, j4_ = parseFileName(i)
+        print(i)
+        col, row, it, x_, y_, z_, rz_, j1_, j2_, j3_, j4_ = parseFileName(i)
         xnom = firstPointX - col * 12.0
         ynom = firstPointY + row * 12.0
         px.append(xnom)
         py.append(ynom)
-        a = [xnom, ynom, x_, y_, z_, rz_, j1_, j2_, j3_, j4_, dirname + '/' + i]
+        a = [xnom, ynom, x_, y_, z_, rz_, j1_, j2_, j3_, j4_, dirname + '/' + i, threshold]
         pointsFinal.append(a)
     return [px, py], pointsFinal
 #################################################################
@@ -96,24 +109,30 @@ def extractPoints(points):
 #################################################################
 if __name__=='__main__':
 
+    parser = OptionParser(usage="%prog --help")
+    parser.add_option("-i", "--input",  dest="input",   type='string',  default='sample_0',    help="Directory with input files.")
+    parser.add_option("-o", "--output",  dest="output",   type='string',  default='Fits_sample_0',    help="Directory with output files.")
+    (opts, args) = parser.parse_args()
+
+
     nominalPoints = getAllNominalPoints()
 
     #This directory must exist to store the fits
-    fitOutput = 'fits'
-
+    fitOutput = opts.output
+    
     #listDir contains the name of the directory for a give set of pictures
     #and the threshold to be applied in the pattern reconition
     listDir = []
     # listDir.append(['./newCalibrations/calibrationDataPoints3', 30])
     # listDir.append(['./newCalibrations/Final_Calibration3', 100])
     # listDir.append(['/home/antonio/Escritorio/ModuleAssembly/ETL/Final_Calibration4/pictures', 100])
-    listDir.append(['/home/antonio/Escritorio/ModuleAssembly/ETL/Final_Calibration3/pictures', 100])
+    listDir.append([opts.input, 50])
    
     #Some plotting to check consistency
     partialNominalPoints = []
     points = []
     for i in listDir:
-        pnom, ppoints = matchPoints(i[0])
+        pnom, ppoints = matchPoints(i[0], i[1])
         partialNominalPoints.append(pnom)
         points.append(ppoints)
 
@@ -134,16 +153,18 @@ if __name__=='__main__':
     for pset in points:
         for i in pset:
             name = i[10]
-            p = ProcessCalibrationPoint.ProcessCalibrationPoint(name, 'fitOutput')
-            x, y, r, valid = p.fit(100)
-            vector = [x, y, r]
-            a = i
-            a.extend(vector)
+            threshold = i[11]
+            p = ProcessCalibrationPoint.ProcessCalibrationPoint(name, fitOutput)
+            x, y, r, valid = p.fit(threshold)
             if valid:
+                print(bcolors.OKGREEN + f'Fit successful for {name} with threshold {threshold}' + bcolors.NORMAL)                 
+                vector = [x, y, r]
+                a = i
+                a.extend(vector)
                 finalList.append(a)
     
  
-    with open('results.pickle', 'wb') as fp:
+    with open(opts.output + '/results.pickle', 'wb') as fp:
         pickle.dump(finalList, fp)
 
 

@@ -8,6 +8,9 @@ import math
 class ProcessCalibrationPoint:
 
     def __init__(self, imageName, destination):
+        
+        if destination[len(destination)-1] == '/':
+            destination = destination[0:len(destination)-1]
         self.destinationFile = destination + '/' + imageName.split('/')[-1]
         self.destinationFileWrong = destination + '_Wrong/' + imageName.split('/')[-1]
         self.imageName = imageName
@@ -82,9 +85,10 @@ class ProcessCalibrationPoint:
             return 0, 0, 0, False
 
         a, b, r = results2.params
-        rmm = abs(r.item()) * 1.0/1718.0
+        rmm = r.item()
         print(f"Centro del círculo: (x={a}, y={b}), radius={r}px = {rmm}mm")
-        if abs(rmm-0.6) > 0.2 * 0.6:
+        print('Cosa:', abs(rmm-900))
+        if abs(rmm-900) > 100.0:
             print('Point discarded because radius measurement was not good')
             #Drawing final
             circle = plt.Circle((a,b), r, color='blue', fill='false', alpha=0.5)
@@ -123,7 +127,7 @@ class ProcessCalibrationPoint:
             x = a + r * math.cos(phi)
             y = b + r * math.sin(phi)
             di = math.sqrt((xv[i]-x)**2 + (yv[i]-y)**2)
-            if di < 2.0*d:
+            if di < 1.0*d:
                 xv2.append(xv[i])
                 yv2.append(yv[i])
         return xv2, yv2

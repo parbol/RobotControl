@@ -35,6 +35,8 @@ class CameraLikelihood(GenericLikelihoodModel):
         self.robot.camera.cx = params[4]
         self.robot.camera.cy = params[4]
         self.robot.phiOrig = params[5]
+        self.robot.R1 = params[6]
+        self.robot.R2 = params[7]
         self.robot.camera.update()
         
         chi2 = 0.0
@@ -58,8 +60,8 @@ class CameraLikelihood(GenericLikelihoodModel):
     def check(self):
         
         # Compute Log-Like value
-        chi2 = 0.0
-
+        chi2 = []
+              
         for i in range(self.n):
             #Position of the robot
             robotPosition = np.asarray([np.pi / 180.0 * self.exog[i][0], np.pi / 180.0 * self.exog[i][1], self.exog[i][2], np.pi / 180.0 * self.exog[i][3]])
@@ -68,16 +70,17 @@ class CameraLikelihood(GenericLikelihoodModel):
             nominalPosition = self.endog[i]
             pm = np.asarray([self.exog[i][4], self.exog[i][5]])
             rm = self.robot.cameraProjectionToPoint3D(pm)
-            chi2 = chi2 + (nominalPosition[0]-rm[0])**2+(nominalPosition[1]-rm[1])**2
+            #chi2 = chi2 + (nominalPosition[0]-rm[0])**2+(nominalPosition[1]-rm[1])**2
+            chi2.append((nominalPosition[0]-rm[0])**2+(nominalPosition[1]-rm[1])**2)
         return chi2
 
 
-    def fit(self, start_params=None, method='powell', maxiter=100000, **kwargs):
+    def fit(self, start_params=None, method='bfgs', maxiter=1000, **kwargs):
         # methods = bfgs, lbfgs, nm, newton, powell, cg, ncg, basinhopping, minimize
 
         if start_params is None:
             # Set initial values for the parameters to optimize
-            start_params = [self.robot.camera.r0[0], self.robot.camera.r0[1], np.sin(self.robot.camera.psi), np.cos(self.robot.camera.psi), -256, 0.0]
+            start_params = [self.robot.camera.r0[0], self.robot.camera.r0[1], np.sin(self.robot.camera.psi), np.cos(self.robot.camera.psi), -256, 0.0, self.robot.R1, self.robot.R2]
  
         # Call the parent class's fit method
         return super(CameraLikelihood, self).fit(start_params=start_params, method=method, maxiter=maxiter, **kwargs)
