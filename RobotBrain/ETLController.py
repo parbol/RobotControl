@@ -13,12 +13,17 @@ import sys
 import os
 import math
 import re
+import numpy as np
 from RobotBrain.RobotController import RobotController
 
 class ETLController:
 
     ##############################################################################
     def __init__(self, device, bauds, camera, robot3D, debug=False):
+        """
+        All angular coordinates are in deg
+
+        """
 
         self.HEADER = '\033[95m'
         self.OKBLUE = '\033[94m'
@@ -30,7 +35,6 @@ class ETLController:
         self.debug = debug
         
         # Information for the client
-        print("initialize RobotController")
         self.robotcontroller = RobotController(device, bauds, debug)
 
         # Camera
@@ -49,27 +53,24 @@ class ETLController:
         # Movement information
         self.safe_z = 180
         self.safe_rz = 60
-        self.picker_tool = [-332.36, 173.79, 94,-161.17]
-        self.safe_position = [-361.43, -421.93, self.safe_z, self.safe_rz]
+        self.picker_tool = [-334.46, 174.59, 91.13,-161.17]
+        # self.safe_position = [-361.43, -421.93, self.safe_z, self.safe_rz]
         # Plate central position in angular coordinates
         # TODO - update j4
         self.plate_position_j1j2j3j4 = { 1: [-30, -70, self.safe_z, 107], 
                                          2: [-98, -78, self.safe_z, 107],
                                          3: [-116, -115, self.safe_z, 107],
                                          4: [-170, -110, self.safe_z, 80],
+                                         5: [-58, -90, self.safe_z, 107] # Glue plate XXX Check J4
                                         }
         # Plate central position in cartesian coordinates, similar to previous but different rounding
-        # TODO check when does Y change sign
         self.plate_position_xyzrz = {1: [292, -417, self.safe_z, 107], 
                                      2: [-292, -390, self.safe_z, 107],
-                                     3: [-319, 155, self.safe_z, 107],
-                                     4: [-332, 174, self.safe_z, -161]
+                                     3: [-319, -155, self.safe_z, 107],
+                                     4: [-332, 174, self.safe_z, -161],
+                                     5: [0, -450, self.safe_z, None], # Glue plate rz None cause I dont care
                                      }
        
-        # Limits to avoid collision
-        # Define one region for picker tool and assembly, another region for Tamale plate
-        self.x_limit = -230
-
         # Valves mapping -1 for correct index
         base_map = {
             "A": 14,
@@ -113,10 +114,10 @@ class ETLController:
     ##############################################################################
     def rotateArm(self, left_handed = True):
         # Use the diagona j1 -45 to avoid collisions with the robot
-        # Use a safe j2 or +-90 to avoid colisions while going to j1 = -45
+        # Use a safe j2 or +-90 to avoid collisions while going to j1 = -45
         # Check if current orientation is the final one
         if self.checkArmPlacement() != left_handed:
-            final_j2 = -90 if left_handed else 90
+            final_j2 = -90 if left_handed else 45
             safe_j2 = 90 if left_handed else -90
             self.updateStatus()
             # Move to safe z 
@@ -133,7 +134,6 @@ class ETLController:
             self.robotcontroller.moveJ(self.position_j1j2j3j4[0], final_j2, self.position_j1j2j3j4[2], self.position_j1j2j3j4[3]) 
             self.updateStatus()
 
-            self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], self.position_xyzrz[3])
             if self.checkArmPlacement() == left_handed:
                 return True
             else:
@@ -147,6 +147,7 @@ class ETLController:
 
     ##############################################################################
     def updateStatus(self):
+        self.robotcontroller.askStatus()
         self.position_xyzrz = self.robotcontroller.getPositionXYZ()
         self.position_j1j2j3j4 = self.robotcontroller.getPositionJ1J2J3()
         self.valves = self.robotcontroller.getValveStatus()
@@ -176,20 +177,7 @@ class ETLController:
 
         if current_plate != target_plate:
             self.changePlate(target_plate)
-        self.updateStatus()
-
-        # Check if changing region
-        if (self.position_xyzrz[0] - self.x_limit) * (x - self.x_limit) <= 0:
-            self.printLog("Crossing x limit = {self.x_limit}, following safety path")
-
-            self.rotateRZ(self.safe_rz)
             self.updateStatus()
-            
-            self.robotcontroller.goTo(self.safe_position[0], self.safe_position[1], self.safe_position[2], self.safe_position[3])
-            self.updateStatus()
-            
-            self.rotateRZ(self.safe_rz)
-        self.updateStatus()
 
         self.printLog(f"Moving to final position, (X,Y) = ({x}, {y})")
         self.robotcontroller.goTo(x, y, self.safe_z, self.position_xyzrz[3])
@@ -200,9 +188,8 @@ class ETLController:
         self.rotateRZ(rz)
         self.updateStatus()
 
-        # Move to desired pos 
-        self.printLog(f"Moving to final position, Z = {z}")
-        self.changeZ(z)
+        self.printLog(f"Moving equal to final pos in (X, Y, Z, RZ) = ({x}, {y}, {z}, {rz})")
+        self.robotcontroller.moveEqual(x, y, z, rz)
         self.updateStatus()
         return True
 
@@ -271,8 +258,11 @@ class ETLController:
     ##############################################################################
     def changeZ(self, z):
         self.updateStatus()
-        self.printLog(f"Moving to z = {z}")
         # XXX - Define a range of safe z?
+        if z > 180:
+            z = 180
+
+        self.printLog(f"Moving to z = {z}")
         self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], z, self.position_xyzrz[3])
         self.updateStatus()
         return True
@@ -288,20 +278,28 @@ class ETLController:
                 +90         -90
                         0
         """
+        if rz == None:
+            return True
+
         self.updateStatus()
         self.printLog(f"Moving rZ from {self.position_xyzrz[3]} to {rz}")
-        if self.position_xyzrz[3] < 0:
-            # Move to +180 or 0, the closest one then move to the final position
-            safe_rz = 0 if abs(self.position_xyzrz[3] - 0) <= abs(self.position_xyzrz[3]+180) else 180
-            self.printLog(f"Initial rZ is negative --> going to {safe_rz}")
-            self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], safe_rz)
-            self.updateStatus()
-        if rz < 0:
-            # Move to 0 or +180, the closest one, then to the final one
-            safe_rz = 0 if abs(rz - 0) <= abs(rz+180) else 180
-            self.printLog(f"Final rZ is negative --> going to {safe_rz}")
-            self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], safe_rz)
-            self.updateStatus()
+
+        if abs(self.position_xyzrz[3]-rz)<1e-3:
+            self.printLog("Skipping safe rotation, close angles")
+        
+        else:
+            if self.position_xyzrz[3] < 0:
+                # Move to +180 or 0, the closest one then move to the final position
+                safe_rz = 0 if abs(self.position_xyzrz[3] - 0) <= abs(self.position_xyzrz[3]+180) else 180
+                self.printLog(f"Initial rZ is negative --> going to {safe_rz}")
+                self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], safe_rz)
+                self.updateStatus()
+            if rz < 0:
+                # Move to 0 or +180, the closest one, then to the final one
+                safe_rz = 0 if abs(rz - 0) <= abs(rz+180) else 180
+                self.printLog(f"Final rZ is negative --> going to {safe_rz}")
+                self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], safe_rz)
+                self.updateStatus()
 
         # Final movement
         self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], rz)
@@ -314,6 +312,7 @@ class ETLController:
     def stepRZ(self, step_rz):
         if abs(step_rz) > 20:
             self.printError("The step rotation is too big check piece placements again IDIOT")
+            return False
         self.updateStatus()
         final_rz = self.position_xyzrz[3] + step_rz
         self.robotcontroller.goTo(self.position_xyzrz[0], self.position_xyzrz[1], self.position_xyzrz[2], final_rz)
@@ -324,8 +323,15 @@ class ETLController:
 
     ##############################################################################
     def grabPickerTool(self):
-        self.safeMovement(self.picker_tool[0], self.picker_tool[1], self.picker_tool[2], self.picker_tool[3])
+        self.safeMovement(self.picker_tool[0], self.picker_tool[1], self.safe_z, self.picker_tool[3])
+        self.changeZ(self.picker_tool[2]+10)
+        v = self.getVelocity()
+        self.setVelocity(10)
+        self.changeZ(self.picker_tool[2])
+        self.printLog("Turn ON EM")
         self.robotcontroller.setEM(1)
+        self.setVelocity(v)
+        time.sleep(1)
         self.updateStatus()
         self.changeZ(self.safe_z)
         return True
@@ -334,11 +340,17 @@ class ETLController:
 
     ##############################################################################
     def releasePickerTool(self):
-        self.safeMovement(self.picker_tool[0], self.picker_tool[1], self.picker_tool[2], self.picker_tool[3])
+        self.safeMovement(self.picker_tool[0], self.picker_tool[1], self.safe_z, self.picker_tool[3])
+        self.changeZ(self.picker_tool[2]+10)
+        v = self.getVelocity()
+        self.setVelocity(10)
+        self.changeZ(self.picker_tool[2])
         self.robotcontroller.setEM(0)
+        self.setVelocity(v)
+        time.sleep(1)
         self.updateStatus()
         self.changeZ(self.safe_z)
-
+        return True
     ##############################################################################
 
 
@@ -352,27 +364,40 @@ class ETLController:
         elif part_name.startswith("COVER"):
             safe_pos = self.plate_position_xyzrz[3]
         else:
-            self.printWarning("I do not know which plate I am loooking for")
+            self.printWarning("I do not know which plate I am looking for")
             safe_pos = self.position_xyzrz
         # Move X-Y to part position and rz safe pos
         self.safeMovement(x, y, safe_pos[2], safe_pos[3])
         self.updateStatus()
         # Step in RZ to correct rotation
+        self.safeMovement(x, y, safe_pos[2], part_rotation_rz)
         self.stepRZ(part_rotation_rz)
         self.updateStatus()
+        
+        is_picked = False
+        v = self.getVelocity()
+        while not is_picked:
+            self.changeZ(z+15)
+            self.setVelocity(5)
+            self.changeZ(z)
+            # Open Tool valves
+            self.printLog("Openning tool valves")
+            valves = self.nameToValves("TOOL", True)
+            self.robotcontroller.setValves(valves)
+            time.sleep(1)
+            self.printLog(f"Clossing {part_name} valves")
+            valves = self.nameToValves(part_name, False)
+            self.robotcontroller.setValves(valves)
+            time.sleep(2)
 
-        self.changeZ(z)
-        # Open Tool valves
-        self.printLog("Openning tool valves")
-        valves = self.nameToValves("Tool", True)
-        self.robotcontroller.setValves(valves)
-        time.sleep(1)
-        self.printLog(f"Clossing {part_name} valves")
-        valves = self.nameToValves(part_name, False)
-        self.robotcontroller.setValves(valves)
+            self.updateStatus()
+            self.changeZ(z+15)
+            self.setVelocity(v)
+            self.changeZ(self.safe_z)
 
-        self.updateStatus()
-        self.changeZ(self.safe_z)
+            result = input("Do you need to repeat the picking up process? (y/n) ")
+            if result.upper() == "N":
+                is_picked = True
         return True
 
     ##############################################################################
@@ -387,22 +412,30 @@ class ETLController:
         elif part_name.startswith("COVER"):
             safe_pos = self.plate_position_xyzrz[3]
         else:
-            self.printWarning("I do not know which plate I am loooking for")
+            self.printWarning("I do not know which plate I am looking for")
             safe_pos = self.position_xyzrz
         # Move X-Y to part position and rz safe pos
         self.safeMovement(x, y, safe_pos[2], safe_pos[3])
         self.updateStatus()
         # Step in RZ to correct rotation
-        self.stepRZ(part_rotation_rz)
+        self.safeMovement(x, y, safe_pos[2], part_rotation_rz)
+        self.updateStatus()
+        # Go down
+        v = self.getVelocity()
+        self.changeZ(z+15)
+        self.setVelocity(5)
+        self.changeZ(z)
         self.updateStatus()
         # Close Tool valves
         self.printLog("Closing tool valves")
-        valves = self.nameToValves("Tool", False)
+        valves = self.nameToValves("TOOL", False)
         self.robotcontroller.setValves(valves)
-        time.sleep(1)
+        time.sleep(2)
         # Move up
-        self.updateStatus()
+        self.changeZ(z+15)
+        self.setVelocity(v)
         self.changeZ(self.safe_z)
+        self.updateStatus()
         return True
 
     ##############################################################################
@@ -412,7 +445,7 @@ class ETLController:
         self.updateStatus()
         valves = list(self.valves)
 
-        for valve in self.valve_map[name]:
+        for valve in self.valve_map[name.upper()]:
             valves[valve] = "1" if to_open else "0"
 
         return "".join(valves)
@@ -425,13 +458,13 @@ class ETLController:
         self.changeZ(z_estimation)
         
         # General focus 
-        summary, focus_z, fraction = self._singleAutoFocus(z_range=1, z_speed=0.03, up_down=True)
+        summary, focus_z, fraction = self._singleAutoFocus(z_range=1, z_speed=0.02, up_down=True)
         if is_double:
             # Change Z to focus one
             self.changeZ(focus_z)
 
             # Second focus from bottom to top
-            summary, focus_z, fraction = self._singleAutoFocus(z_range=0.2, z_speed=0.005, up_down=False)
+            summary, focus_z, fraction = self._singleAutoFocus(z_range=0.2, z_speed=0.003, up_down=False)
             return summary, focus_z, fraction
         else:
             return summary, focus_z, fraction
@@ -478,34 +511,45 @@ class ETLController:
         # move to position but z = position("z")+z_range/2 (start position of autofocus)
         self.updateStatus()
         z = self.position_xyzrz[2]
-        if up_down:
-            start_z = z + z_range / 2
-            end_z   = z - z_range / 2
-        else:
-            start_z = z - z_range / 2
-            end_z   = z + z_range / 2
-
-        self.changeZ(start_z)
-
         # init camera autofocus_acquisition
-        self.printLog("Starting autofocus")
-        if not self.camera.start_autofocusAcquisition():
-            raise RuntimeError("Could not start autofocus acquisition")
 
         # move to position but z = position("z")-z_range/2 and speed = z_speed
         stored_speed = self.getVelocity()
-        self.setVelocity(z_speed)
         stored_acceleration = self.getAcceleration()
-        self.setAcceleration(100)
 
-        summary = None
-        try:
-            self.changeZ(end_z)
-        # stop autofocus_acquisition and get summary
-        finally:
-            summary = self.camera.stop_autofocusAcquisition()
+        max_retries = 3
+        for _ in range(max_retries):
+            if up_down:
+                start_z = z + z_range / 2
+                end_z   = z - z_range / 2
+            else:
+                start_z = z - z_range / 2
+                end_z   = z + z_range / 2
+            self.changeZ(start_z)
+            
+            self.setVelocity(z_speed)
+            self.setAcceleration(100)
+                
+            self.printLog("Starting autofocus")
+            if not self.camera.start_autofocusAcquisition():
+                raise RuntimeError("Could not start autofocus acquisition")
+            
+            summary = None
+            try:
+                self.changeZ(end_z)
+            # stop autofocus_acquisition and get summary
+            finally:
+                summary = self.camera.stop_autofocusAcquisition()
 
-        fraction = self.camera.estimate_focusFraction()
+            fraction = self.camera.estimate_focusFraction()
+
+            if fraction is not None:
+                break
+            else:
+                self.printWarning(f"Autofocus failed at attemp {_}, giving a bigger range")
+                z_range = z_range*1.1
+
+
         if up_down:
             focus_z = start_z - fraction * z_range
         else:
@@ -522,9 +566,12 @@ class ETLController:
     # Needed?
     # ##############################################################################
 
-    # ##############################################################################
-    # def wait_time(self, seconds: int):
-    # Needed?
+    ##############################################################################
+    def wait_time(self, seconds: int):
+        self.printLog(f"Waiting {seconds} seconds")
+        self.robotcontroller.wait_time(seconds)
+        return True
+
     ##############################################################################
     
     ##############################################################################
@@ -557,10 +604,18 @@ class ETLController:
         self.robotcontroller.askStatus()
         self.updateStatus()
         return self.position_xyzrz
-    def getPositionJ1J2J3(self):
+    def getPositionJ1J2J3_deg(self):
         self.robotcontroller.askStatus()
         self.updateStatus()
         return self.position_j1j2j3j4
+    def getPositionJ1J2J3_rad(self):
+        self.robotcontroller.askStatus()
+        self.updateStatus()
+        j1 = np.radians(self.position_j1j2j3j4[0])
+        j2 = np.radians(self.position_j1j2j3j4[1])
+        j3 = self.position_j1j2j3j4[2] # This is z in mm
+        j4 = np.radians(self.position_j1j2j3j4[3])
+        return [j1, j2, j3, j4]
     def getValveStatus(self):
         self.robotcontroller.askStatus()
         self.updateStatus()

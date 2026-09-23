@@ -6,9 +6,10 @@ import math
 
 class ProcessFiducialPoint:
 
-    def __init__(self, imageName):
+    def __init__(self, imageName, is_ETROC):
 
         self.imageName = imageName
+        self.is_ETROC = is_ETROC
         self.height = 0
         self.width = 0
         #Technical stuff
@@ -20,58 +21,175 @@ class ProcessFiducialPoint:
         self.WARNING = '\033[93m'
         self.printLog('Start calibration point')
 
-    def fit(self):
-        
+    def selectContour_ETROC(self, th=35):
         self.printLog('Starting the fit with image ' + self.imageName)
         
-        #Figure 
-        fig, axs = plt.subplots(1, 3, figsize=(20, 10))
         
         #Reading and transforming image
         img = cv2.imread(self.imageName)
         self.img_height, self.img_width = img.shape[:2]
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (5,5), 2)
         
-        axs[0].imshow(gray, cmap='gray')
-        axs[0].set_title('Original image')
-       
-        #Getting the main contour
-        _, thresh = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY_INV)
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        #Getting contours
+        _, thresh = cv2.threshold(blurred, th, 255, cv2.THRESH_BINARY_INV)
+        # Close small gaps in the contours
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+
+        # Getting contours
+        contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
         contourssorted = sorted(contours, key=cv2.contourArea, reverse=True)
+        # First contour is whole image
+        # Second is the whole Fiducial mark (also possible to obtain center of mass)
+        # Select 3,4,5,6 wich are the inner circles
+        # contoursselected = contourssorted[2:6]
         
-        valid = self.checkConsistency(contourssorted)
+        # Select first 4 contours with size smaller than a threshold
+        contoursselected = []
+        for i, c in enumerate(contourssorted):
+            area = cv2.contourArea(c)
+            if area < 35000.0:
+                break
+        contoursselected = contourssorted[i:i+4]
+        # return contoursselected, contourssorted, gray, thresh
+        return contoursselected, contourssorted, blurred, thresh
+
+    def selectContour_PCB(self, th=150):
+        self.printLog('Starting the fit with image ' + self.imageName)
+        
+        
+        #Reading and transforming image
+        img = cv2.imread(self.imageName)
+        self.img_height, self.img_width = img.shape[:2]
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (5,5), 2)
+        
+        #Getting contours
+        _, thresh = cv2.threshold(blurred, th, 255, cv2.THRESH_BINARY_INV)
+
+        # Close small gaps in the contours
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+
+        # Getting contours
+        contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+
+        contourssorted = sorted(contours, key=cv2.contourArea, reverse=True)
+        # First is the whole Fiducial mark (also possible to obtain center of mass)
+        # Select 2,3,4,5 which are the inner circles
+        # contoursselected = contourssorted[3:7]
+
+        # Select first 4 contours with size smaller than a threshold
+        contoursselected = []
+        for i, c in enumerate(contourssorted):
+            area = cv2.contourArea(c)
+            if area < 35000.0:
+                break
+        contoursselected = contourssorted[i:i+4]
+
+        if self.checkConsistency(contoursselected):
+            return contoursselected, contourssorted, blurred, thresh
+        else:
+            return contourssorted[1:2], contourssorted, blurred, thresh
+
+
+    def fit(self, th):
+        # Get contours
+        if self.is_ETROC:
+            # th = 35
+            contoursselected, contourssorted, gray, thresh = self.selectContour_ETROC(th)
+        else:
+            # th = 150
+            contoursselected, contourssorted, gray, thresh = self.selectContour_PCB(th)
+
+
+        #Figure 
+        fig, axs = plt.subplots(1, 3, figsize=(20, 10))
+        # Draw image
+        axs[0].imshow(gray, cmap='gray')
+        axs[0].set_title('Original image')
+        # Draw binary image with contours
+        axs[1].imshow(thresh, cmap='gray')
+        axs[1].set_title(f'Thresholded image th={th}')
+        
+        _is_first_contour = True
+        for i, c in enumerate(contourssorted):
+            # Skip small contours
+            if cv2.contourArea(c) < 50:
+                continue
+            c = c.squeeze()
+            if _is_first_contour:
+                axs[1].plot(c[:,0], c[:,1], 'r', linewidth=2, label="Discarded contours")
+                _is_first_contour = False
+            else:
+                axs[1].plot(c[:,0], c[:,1], 'r', linewidth=2)
+
+        _is_first_contour = True
+        for i, c in enumerate(contoursselected):
+            # print(c, cv2.contourArea(c))
+            c = c.squeeze()
+            if _is_first_contour:
+                axs[1].plot(c[:,0], c[:,1], 'g', linewidth=2, label="Selected contours")
+                _is_first_contour = False
+            else:
+                axs[1].plot(c[:,0], c[:,1], 'g', linewidth=2)
+        axs[1].legend()
+        
+        valid = self.checkConsistency(contoursselected)
         
         if not valid:
-            self.printError('Pattern recognition unsuccessfull')
-            return 0, 0, 0, False
+            print("Fit failed, try to reduce threshold")
+            new_filename = self.imageName.replace(".png", f"_fit_th{th}.png")
+            print(f"Saving image in {new_filename}")
+            plt.savefig(f"{new_filename}")
+            th = th - 5
+            if th <= 15:
+                return 0, 0, False
+            return self.fit(th)
+            
 
-        arrayx, arrayy, x, y, d, valid = self.estimateDistances(contourssorted)
+        if len(contoursselected) == 4:
+            arrayx, arrayy, x, y, d, valid = self.estimateDistances(contoursselected)
+        elif len(contoursselected) == 1:
+            M = cv2.moments(contoursselected[0])
+            x = int(M['m10']/M['m00'])
+            y = int(M['m01']/M['m00'])
         
-        axs[1].imshow(thresh, cmap='gray')
-        axs[1].set_title('Contour selection')
-        
-        #Drawing final
-        circle = plt.Circle((x,y), 5, color='blue', fill=True)
+        # Drawing final
+        circle = plt.Circle((x,y), 10, color='green', fill=True)
         axs[2].add_patch(circle)
         axs[2].imshow(gray, cmap='gray')
         axs[2].set_title('Final estimate')
-        plt.plot(arrayx, arrayy, color='red')
-        plt.show()
-        return x, y, d, True
-
+        if len(contoursselected) == 4:
+            plt.plot(arrayx, arrayy, color='red')
+        new_filename = self.imageName.replace(".png", f"_fit_th{th}.png")
+        print(f"Saving image in {new_filename}")
+        plt.savefig(f"{new_filename}")
+        return x, y, valid
 
     ##############################################################################
     def checkConsistency(self, c):
-        
-        if len(c) < 5:
-            return False
-        for i in range(1, 5):
-            area = cv2.contourArea(c[i])
-            if area < 10000.0 or area > 20000.0:
+        if len(c) == 4:
+            for i in range(len(c)):
+                area = cv2.contourArea(c[i])
+                print(area)
+                if area < 15000.0 or area > 35000.0:
+                    print(f"Not right area {area}")
+                    return False
+            return True
+        elif len(c) == 1:
+            area = cv2.contourArea(c[0])
+            if area < 300000 and area > 35000:
+                return True
+            else: 
                 return False
-        return True
+        else:
+            return False
+
 
     ##############################################################################
     
@@ -80,13 +198,13 @@ class ProcessFiducialPoint:
 
         x = []
         y = []
-        for i in range(1, 5):
+        for i in range(len(c)):
             M = cv2.moments(c[i])
             cx = int(M['m10']/M['m00'])
             cy = int(M['m01']/M['m00'])
             x.append(cx)
             y.append(cy)
-        
+
         xc = np.mean(np.asarray(x))
         yc = np.mean(np.asarray(y))
         d = []
@@ -104,7 +222,6 @@ class ProcessFiducialPoint:
         x.append(x[0])
         y.append(y[0])
         return x, y, xc, yc, dmean, True
-
 
     ##############################################################################
     ##############################################################################

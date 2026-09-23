@@ -18,6 +18,10 @@ class RobotController:
 
     ##############################################################################
     def __init__(self, device, bauds, debug = False):
+        """
+        All angular coordinates in deg
+        All distances in mm
+        """
 
         #Technical stuff
         self.HEADER = '\033[95m'
@@ -132,13 +136,9 @@ class RobotController:
         counter = 0
         text = ''
         while True:
-            self.printDebug(f"Counter = {counter}")
-            self.printDebug(f"Text read = {text}")
             msg = self.serial.read(self.msg_length)
-            self.printDebug(f"msg = {msg}")
             text = text + msg.decode()
             counter = counter + len(msg)
-            self.printDebug(f"Counter after msg = {counter}")
             if counter == self.msg_length:
                 break
         # Message is of the form: "@@@@@POS:....ANGLES:.....VALVES:....EM:...."
@@ -157,7 +157,7 @@ class RobotController:
     def decodeMessage(self, msg):
         """
         Decodes messages received from the robot
-        They must have the form: "POS:....ANGLES:.....VALVES:10001..EM:1"
+        They must have the form: "POS:....ANGLE:.....VALVES:10001..EM:1"
         where ... are signed numbers +2.4-32+56
         VALVES return a binary number with 1 meanning open and 0 closed
         EM return 1 bit with 1 meanning on and 0 off
@@ -229,7 +229,7 @@ class RobotController:
             self.acceleration = a
             return True
         else:
-            self.printError(f"Aceleration must be between 0 and 100, it is {a}")
+            self.printError(f"Acceleration must be between 0 and 100, it is {a}")
             return False
     ##############################################################################
 
@@ -281,6 +281,51 @@ class RobotController:
             return False
 
         # Check the robot is in the desire position
+        _try = 0
+        while _try <= 3:
+            if (self.position_xyz[0] - x)**2 + (self.position_xyz[1] - y)**2 + (self.position_xyz[2] - z)**2 < 0.01**2: 
+                return True
+            print(f"Error position is not matching pos = {self.position_xyz}")
+            self.askStatus()
+            _try +=1
+        
+        self.printError(f'Robot position ({self.position_xyz}) does not match the required position ({[x, y, z]})')
+        self.exit()
+        return False
+    ##############################################################################
+
+    ##############################################################################
+    def moveEqual(self, x, y, z, rz):
+
+        xs = str(x)
+        ys = str(y)
+        zs = str(z)
+        rzs = str(rz)
+        if x >= 0:
+            xs = '+' + xs
+        if y >= 0:
+            ys = '+' + ys
+        if z >= 0:
+            zs = '+' + zs
+        if rz >= 0:
+            rzs = '+' + rzs
+        if self.velocity >= 0:
+            vs = '+' + str(self.velocity)
+        if self.acceleration >= 0:
+            acs = '+' + str(self.acceleration)
+        if self.deceleration >= 0:
+            dcs = '+' + str(self.deceleration)
+        
+
+        cadena = f'MOVE-EQUAL:{xs}{ys}{zs}{rzs}{vs}{acs}{dcs}'
+        
+        self.sendMessage(cadena)
+        data = self.getMessage()
+        if not self.decodeMessage(data):
+            self.printError(f'There was a problem decoding the message from the Robot')
+            return False
+
+        # Check the robot is in the desire position
         if (self.position_xyz[0] - x)**2 + (self.position_xyz[1] - y)**2 + (self.position_xyz[2] - z)**2 < 0.01**2: 
             return True
         else:
@@ -296,6 +341,10 @@ class RobotController:
 
     ##############################################################################
     def moveJ(self, j1, j2, j3, j4):
+        """
+        Expects angular coordinates in deg!!!
+
+        """
 
         j1s = str(j1)
         j2s = str(j2)
@@ -325,11 +374,13 @@ class RobotController:
             return True
         else:
             print(f"Error position is not matching pos = {self.position_j1j2j3}")
+            time.sleep(1)
             self.askStatus()
             if (self.position_j1j2j3[0] - j1)**2 + (self.position_j1j2j3[1] - j2)**2 + (self.position_j1j2j3[2] - j3)**2 < 0.01**2: 
                 return True
             else:
                 self.printError(f'Robot position ({self.position_j1j2j3}) does not match the required position ({[j1, j2, j3]})')
+                self.exit()
                 return False
     ##############################################################################
 

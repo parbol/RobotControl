@@ -66,6 +66,10 @@ class Robot:
 
     ######### Move the robot ###########################################
     def JMoveRobotTo(self, pos):
+        """
+        Expect angular positions in radians!!
+
+        """
         
         #Update the J coordinates
         self.J1 = pos[0] + self.phiOrig
@@ -116,14 +120,14 @@ class Robot:
         # logging.info(f'Camera ux vector: ({self.camera.cartesianpos.ux[0]}, {self.camera.cartesianpos.ux[1]}, {self.camera.cartesianpos.ux[2]})')
         # logging.info(f'Camera uy vector: ({self.camera.cartesianpos.uy[0]}, {self.camera.cartesianpos.uy[1]}, {self.camera.cartesianpos.uy[2]})')
         # logging.info(f'Camera uz vector: ({self.camera.cartesianpos.uz[0]}, {self.camera.cartesianpos.uz[1]}, {self.camera.cartesianpos.uz[2]})')
-        p1 = [1.0 ,  1.0]
-        p2 = [1.0 , -1.0]
-        p3 = [-1.0, -1.0]
-        p4 = [-1.0,  1.0]
-        self.frame[0] = self.cameraProjectionToPoint3D(p1)
-        self.frame[1] = self.cameraProjectionToPoint3D(p2)
-        self.frame[2] = self.cameraProjectionToPoint3D(p3)
-        self.frame[3] = self.cameraProjectionToPoint3D(p4)
+        # p1 = [1.0 ,  1.0]
+        # p2 = [1.0 , -1.0]
+        # p3 = [-1.0, -1.0]
+        # p4 = [-1.0,  1.0]
+        # self.frame[0] = self.cameraProjectionToPoint3D(p1)
+        # self.frame[1] = self.cameraProjectionToPoint3D(p2)
+        # self.frame[2] = self.cameraProjectionToPoint3D(p3)
+        # self.frame[3] = self.cameraProjectionToPoint3D(p4)
 
 
     ######### Set Check if a point is within the frame##################  
@@ -262,6 +266,7 @@ class Robot:
     def cameraProjectionToPoint3D(self, p_):
        
         p = np.copy(p_)
+        
         corrCameraZ = np.copy(self.camera.r)
         corrCameraZ[2] = self.Z0 - self.camera.r[2]
         
