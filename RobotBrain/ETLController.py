@@ -54,7 +54,7 @@ class ETLController:
         self.safe_z = 180
         self.safe_rz = 60
         self.picker_tool = [-334.46, 174.59, 91.13,-161.17]
-        self.safe_position = [-361.43, -421.93, self.safe_z, self.safe_rz]
+        # self.safe_position = [-361.43, -421.93, self.safe_z, self.safe_rz]
         # Plate central position in angular coordinates
         # TODO - update j4
         self.plate_position_j1j2j3j4 = { 1: [-30, -70, self.safe_z, 107], 
@@ -71,10 +71,6 @@ class ETLController:
                                      5: [0, -450, self.safe_z, None], # Glue plate rz None cause I dont care
                                      }
        
-        # Limits to avoid collision
-        # Define one region for picker tool and assembly, another region for Tamale plate
-        self.x_limit = -230
-
         # Valves mapping -1 for correct index
         base_map = {
             "A": 14,
@@ -181,20 +177,6 @@ class ETLController:
 
         if current_plate != target_plate:
             self.changePlate(target_plate)
-            self.updateStatus()
-
-        # Check if changing region
-        if (self.position_xyzrz[0] - self.x_limit) * (x - self.x_limit) <= 0:
-            self.printLog(f"Crossing x limit = {self.x_limit}, following safety path")
-
-            self.rotateRZ(self.safe_rz)
-            self.updateStatus()
-            
-            self.robotcontroller.goTo(self.safe_position[0], self.safe_position[1], self.safe_position[2], self.safe_position[3])
-            self.updateStatus()
-            
-            self.rotateRZ(self.safe_rz)
-
             self.updateStatus()
 
         self.printLog(f"Moving to final position, (X,Y) = ({x}, {y})")
@@ -564,7 +546,7 @@ class ETLController:
             if fraction is not None:
                 break
             else:
-                self.printWarning(f"Autofocus failed at attemp {attemp}, giving a bigger range")
+                self.printWarning(f"Autofocus failed at attemp {_}, giving a bigger range")
                 z_range = z_range*1.1
 
 

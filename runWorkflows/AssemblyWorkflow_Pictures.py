@@ -44,10 +44,12 @@ ETROC_CENTER_CORRECTION = [0.778*mm, 0.04*mm]
 PCB_SHIFT_POS = [2.42*mm, 2.48*mm]
 ETROC_SIZE = [23*mm, 21*mm]
 MARGIN = [0.5*mm, 0.5*mm]
+CORRECTION = [0*mm, -0.5*mm]
 
 now = datetime.now()
 date_str = f"{now.year}-{now.month}-{now.day}-{now.hour}"
 PATH= f"../FiducialETROCs_{date_str}"
+PATH= f"../FiducialETROCs_2026-9-23-12"
 os.makedirs(PATH, exist_ok=True)
 
 def run_retakes(retake, etlcontroller, fiducial):
@@ -206,8 +208,8 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, fiduc
     center_pos = {}
     # Take pic ETROCs
     for i_module in modules_to_perform_assembly:
-        # for i_etroc in ["A", "B", "C", "D"]:
-        for i_etroc in ["D"]:
+        for i_etroc in ["A", "B", "C", "D"]:
+        # for i_etroc in ["D"]:
             corners = []
             print("*"*20)
             print(f" Module {i_module}")
@@ -296,20 +298,20 @@ def ComputePlacement_PCB(corners: np.array, module):
     # the placement is the mean position between the corner and the center
     # XXX - Assuming pics are taken in A -> B -> C -> D order
     place_pos[f"PCB_{module}A"] = [
-            corners[0, 0] + PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2 + MARGIN[0],
-            corners[0, 1] + PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2 - MARGIN[1], theta_deg
+            corners[0, 0] + PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2 + MARGIN[0] + CORRECTION[0],
+            corners[0, 1] + PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2 - MARGIN[1] + CORRECTION[1], theta_deg
             ]
     place_pos[f"PCB_{module}B"] = [
-            corners[1, 0] + PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2 + MARGIN[0],
-            corners[1, 1] - PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2 + MARGIN[1], theta_deg
+            corners[1, 0] + PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2 + MARGIN[0] + CORRECTION[0],
+            corners[1, 1] - PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2 + MARGIN[1] + CORRECTION[1], theta_deg
             ]
     place_pos[f"PCB_{module}C"] = [
-            corners[2, 0] - PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2 - MARGIN[0],
-            corners[2, 1] + PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2 - MARGIN[1], theta_deg
+            corners[2, 0] - PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2 - MARGIN[0] + CORRECTION[0],
+            corners[2, 1] + PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2 - MARGIN[1] + CORRECTION[1], theta_deg
             ]
     place_pos[f"PCB_{module}D"] = [
-            corners[3, 0] - PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2 - MARGIN[0],
-            corners[3, 1] - PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2 + MARGIN[1], theta_deg
+            corners[3, 0] - PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2 - MARGIN[0] + CORRECTION[0],
+            corners[3, 1] - PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2 + MARGIN[1] + CORRECTION[1], theta_deg
             ]
     return place_pos
 
