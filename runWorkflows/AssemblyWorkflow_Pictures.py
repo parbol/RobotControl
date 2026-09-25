@@ -36,15 +36,6 @@ import ImageAnalysis.ProcessFiducialPoint as ProcessFiducialPoint
 #     │   B    │       │   D    │
 #     │        │       │        │
 #     └────────┘       └────────┘
-# 
-#     ___________
-#    |     |     | 
-#    |  A  |  C  |
-#    |_____|_____|
-#    |     |     |
-#    |  B  |  D  |
-#    |_____|_____|
-
 
 ## Constants
 SAFE_Z = 180
@@ -65,7 +56,6 @@ CORRECTION = [0*mm, 0*mm]
 now = datetime.now()
 date_str = f"{now.year}-{now.month}-{now.day}-{now.hour}"
 PATH= f"../FiducialETROCs_{date_str}"
-PATH= f"../FiducialETROCs_2026-9-23-12"
 os.makedirs(PATH, exist_ok=True)
 
 def run_retakes(retake, etlcontroller, fiducial):
@@ -288,8 +278,8 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, fiduc
     center_pos = {}
     # Take pic ETROCs
     for i_module in modules_to_perform_assembly:
-        for i_etroc in ["A", "B", "C", "D"]:
-        # for i_etroc in ["D"]:
+        #for i_etroc in ["A", "B", "C", "D"]:
+        for i_etroc in ["A"]:
             corners = []
             print("*"*20)
             print(f" Module {i_module}")
