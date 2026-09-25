@@ -22,6 +22,21 @@ import ImageAnalysis.ProcessFiducialPoint as ProcessFiducialPoint
 #    B negative x, negative y
 #    C positive x, positive y
 #    D positive x, negative y
+#         x' →
+#     ┌────────┐  0.2  ┌────────┐
+#     │        │   mm  │        │
+#     │   A    │───────│   C    │
+#     │        │       │        │
+#     └────────┘       └────────┘
+#        │
+#       0.2 mm
+#        │
+#     ┌────────┐       ┌────────┐
+#     │        │       │        │
+#     │   B    │       │   D    │
+#     │        │       │        │
+#     └────────┘       └────────┘
+# 
 #     ___________
 #    |     |     | 
 #    |  A  |  C  |
@@ -41,10 +56,11 @@ mm = 1
 # ETROC_CENTER_CORRECTION = [0.748*mm, 0.00*mm]
 ETROC_CENTER_CORRECTION = [0.778*mm, 0.04*mm]
 # PCB_SHIFT_POS = [2.294*mm, 2.499*mm]
-PCB_SHIFT_POS = [2.42*mm, 2.48*mm]
+# PCB_SHIFT_POS = [2.42*mm, 2.48*mm]
 ETROC_SIZE = [23*mm, 21*mm]
-MARGIN = [0.5*mm, 0.5*mm]
-CORRECTION = [0*mm, -0.5*mm]
+ETROC_GAP = 0.2*mm
+# CORRECTION = [0*mm, -0.5*mm]
+CORRECTION = [0*mm, 0*mm]
 
 now = datetime.now()
 date_str = f"{now.year}-{now.month}-{now.day}-{now.hour}"
@@ -82,9 +98,53 @@ def _load_corners_json(folder_name):
             return json.load(f)
     return {}
 
-def _save_corners_json(folder_name, data):
-    with open(f"{folder_name}/_raw_corners.json", "w") as f:
+def _save_corners_json(folder_name, data, name, corners):
+    """
+    Save into a json file the position of the corners and the distances between them
+    Parameters
+    ----------
+    folder_name : str 
+        Folder where the JSON file is stored
+    data : dict 
+        Dictionary containing the previously stored corner positions and distances
+    name : str 
+        Name used to identify the set of corners in the JSON file 
+    corners : array-like 
+        Array containing the [x, y] positions of the four corners.
+    """
+
+    path = f"{folder_name}/_raw_corners.json"
+
+    data[name] = corners
+    data[f"{name}_distances"] = _compute_corner_distances(corners)
+
+    with open(path, "w") as f:
         json.dump(data, f, indent=4)
+
+def _compute_corner_distances(corners):
+    corners = np.asarray(corners, dtype=float)
+
+    pairs = {
+        "0-1": (0, 1),
+        "1-2": (1, 2),
+        "2-3": (2, 3),
+        "3-0": (3, 0),
+        "0-2": (0, 2),
+        "1-3": (1, 3),
+    }
+
+    distances = {}
+
+    for name, (i, j) in pairs.items():
+        vector = corners[j] - corners[i]
+
+        distances[name] = {
+            "dx": float(vector[0]),
+            "dy": float(vector[1]),
+            "distance": float(np.linalg.norm(vector))
+        }
+
+    return distances
 
 def _corners_all_valid(corners):
     """
@@ -151,7 +211,7 @@ def RetakeFiducialCorner_ETROC(module: int, letter: str, corner: int, etlcontrol
         return None
 
     raw_corners[part_name][corner] = new_corner
-    _save_corners_json(folder_name, raw_corners)
+    _save_corners_json(folder_name, raw_corners, part_name, raw_corners[part_name])
 
     if not _corners_all_valid(raw_corners[part_name]):
         pending = [i for i, c in enumerate(raw_corners[part_name])
@@ -165,16 +225,36 @@ def RetakeFiducialCorner_ETROC(module: int, letter: str, corner: int, etlcontrol
     return result
 
 def ComputeCenter_ETROC(corners: np.array, etroc_letter):
+    """
+    Robot reference frame --> x,y
+    ETROC reference frame --> x',y'
+    """
+    # In x,y
     center = np.mean(corners, axis=0)
-    if etroc_letter in ("A", "B"):
-        center = [center[0] - ETROC_CENTER_CORRECTION[0], center[1] - ETROC_CENTER_CORRECTION[1]]
-    else:
-        center = [center[0] + ETROC_CENTER_CORRECTION[0], center[1] + ETROC_CENTER_CORRECTION[1]]
-    horizontal = ((corners[2] - corners[0]) + (corners[3] - corners[1])) / 2
-    theta_deg = np.rad2deg(np.arctan2(horizontal[1], horizontal[0]))
 
-    result = [center[0], center[1], theta_deg]
-    return result
+    # ETROC orientation 
+    horizontal = ((corners[2] - corners[0]) + (corners[3] - corners[1])) / 2
+    theta_rad = np.arctan2(horizontal[1], horizontal[0])
+    theta_deg = np.rad2deg(theta_rad)
+
+    # Correction defined in ETROC reference frame (x', y')
+    correction = np.array(ETROC_CENTER_CORRECTION, dtype=float)
+    # A/B and C/D have opposite correction directions
+    if etroc_letter not in ("A", "B"):
+        correction = -correction
+
+    # Rotate correction from ETROC frame (x', y') to robot frame (x, y)
+    rotation = np.array([
+        [np.cos(theta_rad), -np.sin(theta_rad)],
+        [np.sin(theta_rad),  np.cos(theta_rad)]
+    ])
+    correction_robot = rotation @ correction
+
+    # Apply correction in robot reference frame
+    center = center + correction_robot
+
+
+    return [center[0], center[1], theta_deg]
 
 def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, fiducial):
     """
@@ -225,8 +305,7 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, fiduc
 
             # Store raw corners
             raw_corners = _load_corners_json(folder_name)
-            raw_corners[f"ETROC_{i_module}{i_etroc}"] = corners
-            _save_corners_json(folder_name, raw_corners)
+            _save_corners_json(folder_name, raw_corners, f"ETROC_{i_module}{i_etroc}", corners)
 
             if valid:
                 # Compute center position of the ETROC
@@ -274,7 +353,7 @@ def RetakeFiducialCorner_PCB(module: int, corner: int, etlcontroller, fiducial):
         return None
 
     raw_corners[part_name][corner] = new_corner
-    _save_corners_json(folder_name, raw_corners)
+    _save_corners_json(folder_name, raw_corners, part_name, raw_corners[part_name])
 
     if not _corners_all_valid(raw_corners[part_name]):
         pending = [i for i, c in enumerate(raw_corners[part_name])
@@ -290,29 +369,42 @@ def RetakeFiducialCorner_PCB(module: int, corner: int, etlcontroller, fiducial):
 
 def ComputePlacement_PCB(corners: np.array, module):
     place_pos = {}
+
+    # Center in robot coordinates
+    pcb_center = np.mean(corners, axis=0)
     horizontal = ((corners[2]-corners[0]) + (corners[3]-corners[1])) / 2
     theta_rad = np.arctan2(horizontal[1], horizontal[0])
     theta_deg = np.rad2deg(theta_rad)
-    # center_pos[f"PCB_{i_module}"] = [center[0], center[1], theta_deg]
-    # Compute placement of each module in the PCB
-    # the placement is the mean position between the corner and the center
-    # XXX - Assuming pics are taken in A -> B -> C -> D order
-    place_pos[f"PCB_{module}A"] = [
-            corners[0, 0] + PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2 + MARGIN[0] + CORRECTION[0],
-            corners[0, 1] + PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2 - MARGIN[1] + CORRECTION[1], theta_deg
-            ]
-    place_pos[f"PCB_{module}B"] = [
-            corners[1, 0] + PCB_SHIFT_POS[0] + ETROC_SIZE[0]/2 + MARGIN[0] + CORRECTION[0],
-            corners[1, 1] - PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2 + MARGIN[1] + CORRECTION[1], theta_deg
-            ]
-    place_pos[f"PCB_{module}C"] = [
-            corners[2, 0] - PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2 - MARGIN[0] + CORRECTION[0],
-            corners[2, 1] + PCB_SHIFT_POS[1] - ETROC_SIZE[1]/2 - MARGIN[1] + CORRECTION[1], theta_deg
-            ]
-    place_pos[f"PCB_{module}D"] = [
-            corners[3, 0] - PCB_SHIFT_POS[0] - ETROC_SIZE[0]/2 - MARGIN[0] + CORRECTION[0],
-            corners[3, 1] - PCB_SHIFT_POS[1] + ETROC_SIZE[1]/2 + MARGIN[1] + CORRECTION[1], theta_deg
-            ]
+
+    rotation = np.array([
+        [np.cos(theta_rad), -np.sin(theta_rad)],
+        [np.sin(theta_rad), np.cos(theta_rad)]
+        ])
+
+    # Correction to apply
+    # Half size of ETROC + half gap between them
+    correction_x = ETROC_SIZE[0] / 2 + ETROC_GAP / 2
+    correction_y = ETROC_SIZE[1] / 2 + ETROC_GAP / 2
+    
+    # Different position require the correction in different directions
+    local_positions = {
+            "A" : np.array([-correction_x, +correction_y]),
+            "B" : np.array([-correction_x, -correction_y]),
+            "C" : np.array([+correction_x, +correction_y]),
+            "D" : np.array([-correction_x, +correction_y])
+            }
+
+    for letter, local_position in local_positions.items():
+        # Transform PCB coordinates -> robot coordinates
+        position = pcb_center + rotation @ local_position
+        # Apply global correction, if defined in robot coordinates
+        position += np.array(CORRECTION)
+        place_pos[f"PCB_{module}{letter}"] = [
+            position[0],
+            position[1],
+            theta_deg
+        ]
+
     return place_pos
 
 def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller, fiducial):
@@ -358,8 +450,7 @@ def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller, fiducia
             corners.append(corner)
         # Store raw corners
         raw_corners = _load_corners_json(folder_name)
-        raw_corners[f"PCB_{i_module}"] = corners
-        _save_corners_json(folder_name, raw_corners)
+        _save_corners_json(folder_name, raw_corners, f"PCB_{i_module}", corners)
 
         if not valid:
             continue
