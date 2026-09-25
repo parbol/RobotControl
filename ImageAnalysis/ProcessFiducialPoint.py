@@ -79,10 +79,6 @@ class ProcessFiducialPoint:
         contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
         contourssorted = sorted(contours, key=cv2.contourArea, reverse=True)
-        # First is the whole Fiducial mark (also possible to obtain center of mass)
-        # Select 2,3,4,5 which are the inner circles
-        # contoursselected = contourssorted[3:7]
-
         # Select first 4 contours with size smaller than a threshold
         contoursselected = []
         for i, c in enumerate(contourssorted):
@@ -154,10 +150,6 @@ class ProcessFiducialPoint:
 
         if len(contoursselected) == 4:
             arrayx, arrayy, x, y, d, valid = self.estimateDistances(contoursselected)
-        elif len(contoursselected) == 1:
-            M = cv2.moments(contoursselected[0])
-            x = int(M['m10']/M['m00'])
-            y = int(M['m01']/M['m00'])
         
         # Drawing final
         circle = plt.Circle((x,y), 10, color='green', fill=True)
@@ -181,12 +173,6 @@ class ProcessFiducialPoint:
                     print(f"Not right area {area}")
                     return False
             return True
-        elif len(c) == 1:
-            area = cv2.contourArea(c[0])
-            if area < 300000 and area > 35000:
-                return True
-            else: 
-                return False
         else:
             return False
 
