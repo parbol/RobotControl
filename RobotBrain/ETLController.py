@@ -384,11 +384,11 @@ class ETLController:
             self.printLog("Openning tool valves")
             valves = self.nameToValves("TOOL", True)
             self.robotcontroller.setValves(valves)
-            time.sleep(1)
+            self.robotcontroller.wait_time(2)
             self.printLog(f"Clossing {part_name} valves")
             valves = self.nameToValves(part_name, False)
             self.robotcontroller.setValves(valves)
-            time.sleep(2)
+            self.robotcontroller.wait_time(10)
 
             self.updateStatus()
             self.changeZ(z+15)
