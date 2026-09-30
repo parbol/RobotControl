@@ -25,7 +25,7 @@ if __name__ == "__main__":
     # The physical camera
     camera = Camera(x = 2.0, y = 0.0, z = -27.0, psi = 0.0, theta = 0.0, phi = 0.0, cx = 0.5, cy = 0.5, focaldistance = 10, focusdistance = 0.001)
     # The 3D model of the robot
-    robot3D = Robot(50.0, 30.0, 40, table, camera)
+    robot3D = Robot(50.0, 30.0, 40, 0, table, camera)
 
     # Initialize Camera
     robotCamera = RobotCamera(options.ip, options.port, 'picture.png', robot3D)

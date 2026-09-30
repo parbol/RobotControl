@@ -24,7 +24,7 @@ if __name__ == "__main__":
     camera = None
 
     ################Initilize 3D setup model
-    robot3D = Robot(50.0, 30.0, 30.0, table, camera)
+    robot3D = Robot(50.0, 30.0, 30.0, 0, table, camera)
 
     # Initialize Camera
     robotCamera = None
