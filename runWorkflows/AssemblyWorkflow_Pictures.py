@@ -44,10 +44,7 @@ SAFE_Z = 180
 mm = 1
 
 # Corrections
-# ETROC_CENTER_CORRECTION = [0.748*mm, 0.00*mm]
-ETROC_CENTER_CORRECTION = [0.778*mm, 0.04*mm]
-# PCB_SHIFT_POS = [2.294*mm, 2.499*mm]
-# PCB_SHIFT_POS = [2.42*mm, 2.48*mm]
+ETROC_CENTER_CORRECTION = [0.75*mm, 0.00*mm]
 ETROC_SIZE = [23*mm, 21*mm]
 ETROC_GAP = 0.2*mm
 # CORRECTION = [0*mm, -0.5*mm]
@@ -381,7 +378,7 @@ def ComputePlacement_PCB(corners: np.array, module):
             "A" : np.array([-correction_x, +correction_y]),
             "B" : np.array([-correction_x, -correction_y]),
             "C" : np.array([+correction_x, +correction_y]),
-            "D" : np.array([-correction_x, +correction_y])
+            "D" : np.array([+correction_x, -correction_y])
             }
 
     for letter, local_position in local_positions.items():
