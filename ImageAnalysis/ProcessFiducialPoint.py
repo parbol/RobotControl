@@ -21,6 +21,18 @@ class ProcessFiducialPoint:
         self.WARNING = '\033[93m'
         self.printLog('Start calibration point')
 
+
+    def _select_small_contours(self, contourssorted, max_area=35000.0, n=4):
+        """
+        From contours sorted by decreasing area, return the first n whose area
+        is below max_area. Returns an empty list if there are no contours or
+        none is small enough (instead of failing).
+        """
+        for i, c in enumerate(contourssorted):
+            if cv2.contourArea(c) < max_area:
+                return contourssorted[i:i+n]
+        return []
+
     def selectContour_ETROC(self, th=35):
         self.printLog('Starting the fit with image ' + self.imageName)
         
@@ -48,13 +60,7 @@ class ProcessFiducialPoint:
         # contoursselected = contourssorted[2:6]
         
         # Select first 4 contours with size smaller than a threshold
-        contoursselected = []
-        for i, c in enumerate(contourssorted):
-            area = cv2.contourArea(c)
-            if area < 35000.0:
-                break
-        contoursselected = contourssorted[i:i+4]
-        # return contoursselected, contourssorted, gray, thresh
+        contoursselected = self._select_small_contours(contourssorted, 35000.0, 4)
         return contoursselected, contourssorted, blurred, thresh
 
     def selectContour_PCB(self, th=150):
@@ -80,12 +86,7 @@ class ProcessFiducialPoint:
 
         contourssorted = sorted(contours, key=cv2.contourArea, reverse=True)
         # Select first 4 contours with size smaller than a threshold
-        contoursselected = []
-        for i, c in enumerate(contourssorted):
-            area = cv2.contourArea(c)
-            if area < 35000.0:
-                break
-        contoursselected = contourssorted[i:i+4]
+        contoursselected = self._select_small_contours(contourssorted, 35000.0, 4)
 
         if self.checkConsistency(contoursselected):
             return contoursselected, contourssorted, blurred, thresh
