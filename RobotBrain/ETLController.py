@@ -370,8 +370,8 @@ class ETLController:
         self.safeMovement(x, y, safe_pos[2], safe_pos[3])
         self.updateStatus()
         # Step in RZ to correct rotation
-        self.safeMovement(x, y, safe_pos[2], part_rotation_rz)
-        self.stepRZ(part_rotation_rz)
+        self.safeMovement(x, y, safe_pos[2], -part_rotation_rz)
+        # self.stepRZ(-part_rotation_rz)
         self.updateStatus()
         
         is_picked = False
@@ -418,7 +418,7 @@ class ETLController:
         self.safeMovement(x, y, safe_pos[2], safe_pos[3])
         self.updateStatus()
         # Step in RZ to correct rotation
-        self.safeMovement(x, y, safe_pos[2], part_rotation_rz)
+        self.safeMovement(x, y, safe_pos[2], -part_rotation_rz)
         self.updateStatus()
         # Go down
         v = self.getVelocity()
