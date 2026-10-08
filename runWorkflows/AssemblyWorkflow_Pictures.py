@@ -50,12 +50,8 @@ ETROC_GAP = 0.2*mm
 # CORRECTION = [0*mm, -0.5*mm]
 CORRECTION = [0*mm, 0*mm]
 
-now = datetime.now()
-date_str = f"{now.year}-{now.month}-{now.day}-{now.hour}"
-PATH= f"../FiducialETROCs_{date_str}"
-os.makedirs(PATH, exist_ok=True)
 
-def run_retakes(retake, etlcontroller, fiducial):
+def run_retakes(retake, etlcontroller, fiducial, path):
     """
     Execute picture retakes
     """
@@ -67,11 +63,11 @@ def run_retakes(retake, etlcontroller, fiducial):
 
         if parts[0] == "ETROC" and len(parts)==4:
             _, module, letter, corner = parts
-            results[i_single_retake] = RetakeFiducialCorner_ETROC(int(module), letter, int(corner), etlcontroller, fiducial)
+            results[i_single_retake] = RetakeFiducialCorner_ETROC(int(module), letter, int(corner), etlcontroller, fiducial, path)
 
         elif parts[0] == "PCB" and len(parts)==3:
             _, module, corner = parts
-            results[i_single_retake] = RetakeFiducialCorner_PCB(int(module), int(corner), etlcontroller, fiducial)
+            results[i_single_retake] = RetakeFiducialCorner_PCB(int(module), int(corner), etlcontroller, fiducial, path)
 
         else:
             raise ValueError(f"Not valid format for retake: {i_single_retake}. It should be 'ETROC:<Module>:<Letter>:<Corner>' or 'PCB:<Module>:<Corner>'")
@@ -145,7 +141,7 @@ def _update_assembly_positions_file(key, value, path=None):
     touching the rest of the file. If the file does not exist yet, nothing
     is written to disk (the caller still gets the recomputed value back).
     """
-    path = path or f"{PATH}/assembly_positions.json"
+    path = path or f"{path}/assembly_positions.json"
     if not os.path.exists(path):
         print(f"No existe todavia {path}; no se ha actualizado nada en disco, "
               f"solo se devuelve el valor recalculado de {key}.")
@@ -158,7 +154,7 @@ def _update_assembly_positions_file(key, value, path=None):
     print(f"Actualizado {key} en {path}")
 
 
-def RetakeFiducialCorner_ETROC(module: int, letter: str, corner: int, etlcontroller, fiducial):
+def RetakeFiducialCorner_ETROC(module: int, letter: str, corner: int, etlcontroller, fiducial, path):
     """
     Repeats a single corner and recomputes the center and rotation of this ETROC
 
@@ -183,7 +179,7 @@ def RetakeFiducialCorner_ETROC(module: int, letter: str, corner: int, etlcontrol
     with open(fiducial) as f:
         positions = json.load(f)
 
-    folder_name = f"{PATH}/FiducialETROCs"
+    folder_name = f"{path}/FiducialETROCs"
     part_name = f"ETROC_{module}{letter}"
 
     raw_corners = _load_corners_json(folder_name)
@@ -243,7 +239,7 @@ def ComputeCenter_ETROC(corners: np.array, etroc_letter):
 
     return [center[0], center[1], theta_deg]
 
-def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, fiducial):
+def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, fiducial, path):
     """
     Acquire fiducial mark images for ETROCs and compute their center positions
     in robot coordinates.
@@ -269,14 +265,14 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, fiduc
         positions = json.load(f)
 
     # Folder to store images
-    folder_name = f"{PATH}/FiducialETROCs"
+    folder_name = f"{path}/FiducialETROCs"
     os.makedirs(folder_name, exist_ok=True)
 
     center_pos = {}
     # Take pic ETROCs
     for i_module in modules_to_perform_assembly:
-        #for i_etroc in ["A", "B", "C", "D"]:
-        for i_etroc in ["A"]:
+        for i_etroc in ["A", "B", "C", "D"]:
+        # for i_etroc in ["A"]:
             corners = []
             print("*"*20)
             print(f" Module {i_module}")
@@ -302,7 +298,7 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, fiduc
                 center_pos[f"ETROC_{i_module}{i_etroc}"] = [None, None, None]
     return center_pos
 
-def RetakeFiducialCorner_PCB(module: int, corner: int, etlcontroller, fiducial):
+def RetakeFiducialCorner_PCB(module: int, corner: int, etlcontroller, fiducial, path):
     """
     Repeats a single corner and recomputes placement position and rotation of this PCB
 
@@ -325,7 +321,7 @@ def RetakeFiducialCorner_PCB(module: int, corner: int, etlcontroller, fiducial):
     with open(fiducial) as f:
         positions = json.load(f)
 
-    folder_name = f"{PATH}/FiducialPCB"
+    folder_name = f"{path}/FiducialPCB"
     part_name = f"PCB_{module}"
 
     raw_corners = _load_corners_json(folder_name)
@@ -394,7 +390,7 @@ def ComputePlacement_PCB(corners: np.array, module):
 
     return place_pos
 
-def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller, fiducial):
+def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller, fiducial, path):
     """
     Acquire fiducial mark images for PCBs and compute their center positions 
     in robot coordinates.
@@ -421,7 +417,7 @@ def TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller, fiducia
         positions = json.load(f)
 
     # Folder to store images
-    folder_name = f"{PATH}/FiducialPCB"
+    folder_name = f"{path}/FiducialPCB"
     os.makedirs(folder_name, exist_ok=True)
 
     place_pos = {}
@@ -513,7 +509,17 @@ if __name__ == "__main__":
     parser.add_option("-c", "--calibration", dest="calibration", type=str, default="ExperimentalSetup/Calibrations/calibrations.txt", help="Robot calibration file.")
     parser.add_option("-f", "--fiducial", dest="fiducial", type=str, default="runWorkflows/FiducialMarkPos.json", help="Fiducial mark positions file.")
     parser.add_option("--retake", dest="retake", type=str, default=None, help="Retakes photos instead of running whole workflow. Syntax is: 'ETROC:<hybrid>:<letter>:<corner>' or 'PCB:<module>:<corner>'. To use various at the same time separate them with comas.")
+    parser.add_option("--path", dest="path", type=str, default=None, help="Path to folder where pics and positions are saved.")
     (options, args) = parser.parse_args()
+
+    if options.path == None:
+        now = datetime.now()
+        date_str = f"{now.year}-{now.month}-{now.day}-{now.hour}"
+        path= f"../FiducialETROCs_{date_str}"
+    else:
+        path = options.path
+    
+    os.makedirs(path, exist_ok=True)
 
     ################ Initialize 3D setup model
     # The table
@@ -545,7 +551,7 @@ if __name__ == "__main__":
     try:
         ################ Retake
         if options.retake:
-            results = run_retakes(options.retake, etlcontroller, options.fiducial)
+            results = run_retakes(options.retake, etlcontroller, options.fiducial, path)
             print(f"Recomputed results: {results}")
         ################ END - Retake
 
@@ -557,13 +563,13 @@ if __name__ == "__main__":
             # modules_to_perform_assembly = [1, 2, 3, 4]
             modules_to_perform_assembly = [1]
             # Take pictures of the fiducial marks in the ETROCs, compute and store centers
-            etroc_pos = TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, options.fiducial)
+            etroc_pos = TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, options.fiducial, path)
             assembly_parts_position.update(etroc_pos)
             # Take pictures of the fiducial marks in the PCB, compute each PCB placement
-            pcb_pos = TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller, options.fiducial)
+            pcb_pos = TakePicFiducialMarks_PCB(modules_to_perform_assembly, etlcontroller, options.fiducial, path)
             assembly_parts_position.update(pcb_pos)
 
-            save_assembly_positions(assembly_parts_position, f"{PATH}/assembly_positions.json")
+            save_assembly_positions(assembly_parts_position, f"{path}/assembly_positions.json")
          ################ END - Position Assembly Parts
     except Exception as e:
         print(e)

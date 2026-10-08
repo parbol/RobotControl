@@ -106,8 +106,8 @@ if __name__ == "__main__":
         etlcontroller.grabPickerTool()
         # TODO
         for i_module in modules_to_perform_assembly:
-            # for i_etroc in ["A", "B", "C", "D"]:
-            for i_etroc in ["A"]:
+            for i_etroc in ["A", "B", "C", "D"]:
+            # for i_etroc in ["A"]:
                 # Pick ETROC, assume orientation is ok (apart from correction)
                 etroc_pos = assembly_parts_position[f"ETROC_{i_module}{i_etroc}"]
                 print(f"Moving to grab ETROC from {etroc_pos}")
