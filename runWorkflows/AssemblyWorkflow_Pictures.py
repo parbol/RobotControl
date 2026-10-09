@@ -44,7 +44,7 @@ SAFE_Z = 180
 mm = 1
 
 # Corrections
-ETROC_CENTER_CORRECTION = [0.75*mm, 0.00*mm]
+ETROC_CENTER_CORRECTION = [1.25*mm, 0.00*mm]
 ETROC_SIZE = [23*mm, 21*mm]
 ETROC_GAP = 0.2*mm
 # CORRECTION = [0*mm, -0.5*mm]
@@ -235,7 +235,6 @@ def ComputeCenter_ETROC(corners: np.array, etroc_letter):
 
     # Apply correction in robot reference frame
     center = center + correction_robot
-
 
     return [center[0], center[1], theta_deg]
 
@@ -498,6 +497,55 @@ def save_assembly_positions(assembly_parts_position, path):
     print(f"Assembly positions written to {path}")
 
 
+### DEBUG ASSEMBLY  ###
+def RecalculateAssemblyPositions(etroc_corners_file, pcb_corners_file):
+    """
+    Recalculate assembly positions from two JSON files:
+      - one containing ETROC corners
+      - one containing PCB corners
+
+    Returns
+    -------
+    dict
+        Assembly positions.
+    """
+
+    assembly_positions = {}
+    # ETROCs
+    with open(etroc_corners_file) as f:
+        etroc_data = json.load(f)
+    for name, corners in etroc_data.items():
+        # Ignore distance entries
+        if name.endswith("_distances"):
+            continue
+        if not name.startswith("ETROC_"):
+            continue
+        if not _corners_all_valid(corners):
+            print(f"Skipping {name}: invalid/incomplete corners")
+            continue
+        corners = np.asarray(corners, dtype=float)
+        letter = name[-1]
+        result = ComputeCenter_ETROC(corners, letter)
+        assembly_positions[name] = result
+
+    # PCBs
+    with open(pcb_corners_file) as f:
+        pcb_data = json.load(f)
+    for name, corners in pcb_data.items():
+        # Ignore distance entries
+        if name.endswith("_distances"):
+            continue
+        if not name.startswith("PCB_"):
+            continue
+        if not _corners_all_valid(corners):
+            print(f"Skipping {name}: invalid/incomplete corners")
+            continue
+        corners = np.asarray(corners, dtype=float)
+        module = int(name.split("_")[1])
+        result = ComputePlacement_PCB(corners, module)
+        assembly_positions.update(result)
+    return assembly_positions
+
 
 if __name__ == "__main__":
     
@@ -510,6 +558,8 @@ if __name__ == "__main__":
     parser.add_option("-f", "--fiducial", dest="fiducial", type=str, default="runWorkflows/FiducialMarkPos.json", help="Fiducial mark positions file.")
     parser.add_option("--retake", dest="retake", type=str, default=None, help="Retakes photos instead of running whole workflow. Syntax is: 'ETROC:<hybrid>:<letter>:<corner>' or 'PCB:<module>:<corner>'. To use various at the same time separate them with comas.")
     parser.add_option("--path", dest="path", type=str, default=None, help="Path to folder where pics and positions are saved.")
+    parser.add_option("--etroc-corners", dest="etroc_corners", type="string", default=None, help="JSON file containing ETROC corners.")
+    parser.add_option("--pcb-corners", dest="pcb_corners", type="string", default=None, help="JSON file containing PCB corners.")
     (options, args) = parser.parse_args()
 
     if options.path == None:
@@ -521,6 +571,12 @@ if __name__ == "__main__":
     
     os.makedirs(path, exist_ok=True)
 
+    ### FOR DEBUG ###
+    if options.etroc_corners and options.pcb_corners:
+        assembly_positions = RecalculateAssemblyPositions(options.etroc_corners, options.pcb_corners)
+        save_assembly_positions(assembly_positions, f"{path}/assembly_positions.json")
+        exit(0)
+    ####---------###
     ################ Initialize 3D setup model
     # The table
     table = Table(0.01, 0.0)
