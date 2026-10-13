@@ -576,7 +576,7 @@ if __name__ == "__main__":
         assembly_positions = RecalculateAssemblyPositions(options.etroc_corners, options.pcb_corners)
         save_assembly_positions(assembly_positions, f"{path}/assembly_positions.json")
         exit(0)
-    ####---------###
+    #### END Debug ###
     ################ Initialize 3D setup model
     # The table
     table = Table(0.01, 0.0)
