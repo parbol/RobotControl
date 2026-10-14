@@ -141,10 +141,9 @@ def _update_assembly_positions_file(key, value, path=None):
     touching the rest of the file. If the file does not exist yet, nothing
     is written to disk (the caller still gets the recomputed value back).
     """
-    path = path or f"{path}/assembly_positions.json"
+    path = f"{path}/assembly_positions.json"
     if not os.path.exists(path):
-        print(f"No existe todavia {path}; no se ha actualizado nada en disco, "
-              f"solo se devuelve el valor recalculado de {key}.")
+        print(f"{path} does nor exits; nothing is updated. Only the recomputed value of {key} is returned")
         return
     with open(path) as f:
         data = json.load(f)
@@ -204,7 +203,7 @@ def RetakeFiducialCorner_ETROC(module: int, letter: str, corner: int, etlcontrol
 
     # Recompute center
     result = ComputeCenter_ETROC(np.asarray(raw_corners[part_name]), letter)
-    _update_assembly_positions_file(part_name, result)
+    _update_assembly_positions_file(part_name, result, path)
     return result
 
 def ComputeCenter_ETROC(corners: np.array, etroc_letter):
@@ -270,8 +269,8 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, fiduc
     center_pos = {}
     # Take pic ETROCs
     for i_module in modules_to_perform_assembly:
-        for i_etroc in ["A", "B", "C", "D"]:
-        # for i_etroc in ["A"]:
+        # for i_etroc in ["A", "B", "C", "D"]:
+        for i_etroc in ["C"]:
             corners = []
             print("*"*20)
             print(f" Module {i_module}")
@@ -346,7 +345,7 @@ def RetakeFiducialCorner_PCB(module: int, corner: int, etlcontroller, fiducial, 
     # Recompute placement
     result = ComputePlacement_PCB(np.asarray(raw_corners[part_name]), module)
     for key, value in result.items():
-        _update_assembly_positions_file(key, value)
+        _update_assembly_positions_file(key, value, path)
     return result
 
 def ComputePlacement_PCB(corners: np.array, module):

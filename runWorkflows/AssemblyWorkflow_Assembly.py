@@ -68,7 +68,7 @@ if __name__ == "__main__":
     parser.add_option("-d", "--device", dest="device", type="string", default="/dev/ttyUSB0", help="Robot device name.")
     parser.add_option("-b", "--bauds", dest="bauds", type=int, default=115200, help="Robot bauds.")
     parser.add_option("-c", "--calibration", dest="calibration", type=str, default="ExperimentalSetup/Calibrations/calibrations.txt", help="Robot calibration file.")
-    parser.add_option("--pos", "--position", dest="position", type=str, default=PATH, help="Json with assembly parts position.")
+    parser.add_option("--path", "--path", dest="position", type=str, default=PATH, help="Json with assembly parts position.")
     # parser.add_option("-cor", "--correction", dest="correction", type=str, default=None, help="Json file with per hybrid correction")
     (options, args) = parser.parse_args()
 
@@ -106,8 +106,8 @@ if __name__ == "__main__":
         etlcontroller.grabPickerTool()
         # TODO
         for i_module in modules_to_perform_assembly:
-            for i_etroc in ["A", "B", "C", "D"]:
-            # for i_etroc in ["A"]:
+            # for i_etroc in ["A", "B", "C", "D"]:
+            for i_etroc in ["C"]:
                 # Pick ETROC, assume orientation is ok (apart from correction)
                 etroc_pos = assembly_parts_position[f"ETROC_{i_module}{i_etroc}"]
                 print(f"Moving to grab ETROC from {etroc_pos}")
