@@ -77,9 +77,9 @@ class ProcessFiducialPoint:
         _, thresh = cv2.threshold(blurred, th, 255, cv2.THRESH_BINARY_INV)
 
         # Close small gaps in the contours
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
 
-        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
 
         # Getting contours
         contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
@@ -87,10 +87,12 @@ class ProcessFiducialPoint:
         contourssorted = sorted(contours, key=cv2.contourArea, reverse=True)
         # Select first 4 contours with size smaller than a threshold
         contoursselected = self._select_small_contours(contourssorted, 35000.0, 4)
+        # contoursselected = self._select_small_contours(contourssorted, 3500000000000000000.0, 4)
 
         if self.checkConsistency(contoursselected):
             return contoursselected, contourssorted, blurred, thresh
         else:
+            print("Return contourssorted")
             return contourssorted[1:2], contourssorted, blurred, thresh
 
 
