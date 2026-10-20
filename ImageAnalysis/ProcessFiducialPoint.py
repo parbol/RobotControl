@@ -141,15 +141,32 @@ class ProcessFiducialPoint:
         valid = self.checkConsistency(contoursselected)
         
         if not valid:
-            print("Fit failed, try to reduce threshold")
-            new_filename = self.imageName.replace(".png", f"_fit_th{th}.png")
-            print(f"Saving image in {new_filename}")
-            plt.savefig(f"{new_filename}")
-            th = th - 5
-            if th <= 15:
-                return 0, 0, False
-            return self.fit(th)
-            
+            # Try to find whole mark
+            body = self._find_whole_mark(contourssorted)
+            if body is not None:
+                self.printWarning("Hole open, using the center of the whole mark")
+                hull = cv2.convexHull(contoursselected[0])
+                M = cv2.moments(hull)
+                x = M['m10'] / M['m00']
+                y = M['m01'] / M['m00']
+
+                axs[2].imshow(gray, cmap='gray')
+                axs[2].add_patch(plt.Circle((x, y), 10, color='green', fill=True))
+                hp = hull.squeeze()
+                axs[2].plot(np.append(hp[:, 0], hp[0, 0]),
+                            np.append(hp[:, 1], hp[0, 1]), color='red')
+                axs[2].set_title('Final estimate (whole mark)')
+                plt.savefig(self.imageName.replace(".png", f"_fit_th{th}.png"))
+                return x, y, True
+            else:
+                print("Fit failed, try to reduce threshold")
+                new_filename = self.imageName.replace(".png", f"_fit_th{th}.png")
+                print(f"Saving image in {new_filename}")
+                plt.savefig(f"{new_filename}")
+                th = th - 5
+                if th <= 15:
+                    return 0, 0, False
+                return self.fit(th)
 
         if len(contoursselected) == 4:
             arrayx, arrayy, x, y, d, valid = self.estimateDistances(contoursselected)
@@ -179,6 +196,22 @@ class ProcessFiducialPoint:
         else:
             return False
 
+    ##############################################################################
+
+    ##############################################################################
+    def _find_whole_mark(self, contourssorted, min_area=60000.0):
+        """
+        """
+        for c in contourssorted:
+            if cv2.contourArea(c) < min_area:
+                break
+            x, y, w, h = cv2.boundingRect(c)
+            touches_border = (x <= 1 or y <= 1 or
+                              x + w >= self.img_width - 2 or
+                              y + h >= self.img_height - 2)
+            if not touches_border:
+                return c
+        return None
 
     ##############################################################################
     
