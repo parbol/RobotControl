@@ -44,7 +44,8 @@ SAFE_Z = 180
 mm = 1
 
 # Corrections
-ETROC_CENTER_CORRECTION = [1.25*mm, 0.00*mm]
+# ETROC_CENTER_CORRECTION = [1.25*mm, 0.00*mm]
+ETROC_CENTER_CORRECTION = [0.00*mm, 0.00*mm]
 ETROC_SIZE = [23*mm, 21*mm]
 ETROC_GAP = 0.2*mm
 # CORRECTION = [0*mm, -0.5*mm]
@@ -269,8 +270,8 @@ def TakePicFiducialMarks_ETROC(modules_to_perform_assembly, etlcontroller, fiduc
     center_pos = {}
     # Take pic ETROCs
     for i_module in modules_to_perform_assembly:
-        # for i_etroc in ["A", "B", "C", "D"]:
-        for i_etroc in ["C"]:
+        for i_etroc in ["A", "B", "C", "D"]:
+        # for i_etroc in ["A", "C"]:
             corners = []
             print("*"*20)
             print(f" Module {i_module}")
