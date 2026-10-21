@@ -61,7 +61,11 @@ class ProcessFiducialPoint:
         
         # Select first 4 contours with size smaller than a threshold
         contoursselected = self._select_small_contours(contourssorted, 35000.0, 4)
-        return contoursselected, contourssorted, blurred, thresh
+        if self.checkConsistency(contoursselected):
+            return contoursselected, contourssorted, blurred, thresh
+        else:
+            print("Return contourssorted")
+            return contourssorted[1:2], contourssorted, blurred, thresh
 
     def selectContour_PCB(self, th=150):
         self.printLog('Starting the fit with image ' + self.imageName)
@@ -87,7 +91,6 @@ class ProcessFiducialPoint:
         contourssorted = sorted(contours, key=cv2.contourArea, reverse=True)
         # Select first 4 contours with size smaller than a threshold
         contoursselected = self._select_small_contours(contourssorted, 35000.0, 4)
-        # contoursselected = self._select_small_contours(contourssorted, 3500000000000000000.0, 4)
 
         if self.checkConsistency(contoursselected):
             return contoursselected, contourssorted, blurred, thresh
@@ -199,10 +202,11 @@ class ProcessFiducialPoint:
     ##############################################################################
 
     ##############################################################################
-    def _find_whole_mark(self, contourssorted, min_area=60000.0):
+    def _find_whole_mark(self, contourssorted, min_area=100000.0):
         """
         """
         for c in contourssorted:
+            print(cv2.contourArea(c))
             if cv2.contourArea(c) < min_area:
                 break
             x, y, w, h = cv2.boundingRect(c)
@@ -211,6 +215,9 @@ class ProcessFiducialPoint:
                               y + h >= self.img_height - 2)
             if not touches_border:
                 return c
+            else:
+                self.printWarning("Touching border")
+                # return c
         return None
 
     ##############################################################################
