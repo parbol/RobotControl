@@ -44,8 +44,7 @@ SAFE_Z = 180
 mm = 1
 
 # Corrections
-# ETROC_CENTER_CORRECTION = [1.25*mm, 0.00*mm]
-ETROC_CENTER_CORRECTION = [0.00*mm, 0.00*mm]
+ETROC_CENTER_CORRECTION = [-0.75*mm, 0.00*mm]
 ETROC_SIZE = [23*mm, 21*mm]
 ETROC_GAP = 0.2*mm
 # CORRECTION = [0*mm, -0.5*mm]
