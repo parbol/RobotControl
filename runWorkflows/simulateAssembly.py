@@ -67,7 +67,9 @@ class ETROC:
         self.corners = np.array([np.asarray([0.0, 0.0]) for i in range(len(corners))])
         self.fiducialMarks = np.array([np.asarray([0.0, 0.0]) for i in range(len(fiducialMarks))])
         self.center = np.asarray([0.0, 0.0])
-        
+        self.finalCorners = np.array([np.asarray([0.0, 0.0]) for i in range(len(corners))])
+        self.finalFiducialMarks = np.array([np.asarray([0.0, 0.0]) for i in range(len(fiducialMarks))])
+        self.finalCenter = np.asarray([0.0, 0.0])
 
     def move(self, p, theta):
 
@@ -79,20 +81,44 @@ class ETROC:
         self.center = p + rotation @ self.nomCenter
 
 
-    def updatePosition(self, grabPoint, fakeTheta):
+    def updatePosition(self, grabPoint, fakeTheta, finalPoint):
 
-        
-
+        rotation = np.array([[np.cos(fakeTheta), -np.sin(fakeTheta)], [np.sin(fakeTheta), np.cos(fakeTheta)]])
+        for i, f in enumerate(self.corners):
+            pos = f - grabPoint
+            newpos = rotation @ pos
+            finalpos = finalPoint + newpos
+            self.finalCorners[i] = finalpos
+            self.finalCenter = self.finalCenter + finalpos
+        self.finalCenter /= len(self.finalCorners)
+        for i, f in enumerate(self.fiducialMarks):
+            pos = f - grabPoint
+            newpos = rotation @ pos
+            finalpos = finalPoint + newpos
+            self.finalFiducialMarks[i] = finalpos
+            
+            
     def draw(self, ax):
         # Draw ETROC
-        ax.plot([self.corners[0][0], self.corners[1][0]], [self.corners[0][1], self.corners[1][1]], 'b-')
-        ax.plot([self.corners[1][0], self.corners[3][0]], [self.corners[1][1], self.corners[3][1]], 'b-')
-        ax.plot([self.corners[3][0], self.corners[2][0]], [self.corners[3][1], self.corners[2][1]], 'b-')
-        ax.plot([self.corners[2][0], self.corners[0][0]], [self.corners[2][1], self.corners[0][1]], 'b-')
+        ax[0].plot([self.corners[0][0], self.corners[1][0]], [self.corners[0][1], self.corners[1][1]], 'b-')
+        ax[0].plot([self.corners[1][0], self.corners[3][0]], [self.corners[1][1], self.corners[3][1]], 'b-')
+        ax[0].plot([self.corners[3][0], self.corners[2][0]], [self.corners[3][1], self.corners[2][1]], 'b-')
+        ax[0].plot([self.corners[2][0], self.corners[0][0]], [self.corners[2][1], self.corners[0][1]], 'b-')
         # Draw fiducial marks
-        ax.plot(self.fiducialMarks[:, 0], self.fiducialMarks[:, 1], 'ro')
+        ax[1].plot(self.fiducialMarks[:, 0], self.fiducialMarks[:, 1], 'ro')
         # Draw center
-        ax.plot(self.center[0], self.center[1], 'kx')
+        ax[0].plot(self.center[0], self.center[1], 'kx')
+
+        # Draw ETROC
+        ax[1].plot([self.finalCorners[0][0], self.finalCorners[1][0]], [self.finalCorners[0][1], self.finalCorners[1][1]], 'b-')
+        ax[1].plot([self.finalCorners[1][0], self.finalCorners[3][0]], [self.finalCorners[1][1], self.finalCorners[3][1]], 'b-')
+        ax[1].plot([self.finalCorners[3][0], self.finalCorners[2][0]], [self.finalCorners[3][1], self.finalCorners[2][1]], 'b-')
+        ax[1].plot([self.finalCorners[2][0], self.finalCorners[0][0]], [self.finalCorners[2][1], self.finalCorners[0][1]], 'b-')
+        # Draw fiducial marks
+        ax[1].plot(self.finalFiducialMarks[:, 0], self.finalFiducialMarks[:, 1], 'ro')
+        # Draw center
+        ax[1].plot(self.finalCenter[0], self.finalCenter[1], 'kx')
+
 
 
 class PCB:
@@ -127,17 +153,27 @@ class PCB:
 
     def draw(self, ax):
         # Draw PCB
-        ax.plot([self.corners[0][0], self.corners[1][0]], [self.corners[0][1], self.corners[1][1]], 'b-')
-        ax.plot([self.corners[1][0], self.corners[3][0]], [self.corners[1][1], self.corners[3][1]], 'b-')
-        ax.plot([self.corners[3][0], self.corners[2][0]], [self.corners[3][1], self.corners[2][1]], 'b-')
-        ax.plot([self.corners[2][0], self.corners[0][0]], [self.corners[2][1], self.corners[0][1]], 'b-')
+        ax[0].plot([self.corners[0][0], self.corners[1][0]], [self.corners[0][1], self.corners[1][1]], 'b-')
+        ax[0].plot([self.corners[1][0], self.corners[3][0]], [self.corners[1][1], self.corners[3][1]], 'b-')
+        ax[0].plot([self.corners[3][0], self.corners[2][0]], [self.corners[3][1], self.corners[2][1]], 'b-')
+        ax[0].plot([self.corners[2][0], self.corners[0][0]], [self.corners[2][1], self.corners[0][1]], 'b-')
         # Draw fiducial marks
-        ax.plot(self.fiducialMarks[:, 0], self.fiducialMarks[:, 1], 'ro')
+        ax[0].plot(self.fiducialMarks[:, 0], self.fiducialMarks[:, 1], 'ro')
         # Draw ETROC positions
-        ax.plot(self.etrocPositions[:, 0], self.etrocPositions[:, 1], 'g+')
+        ax[0].plot(self.etrocPositions[:, 0], self.etrocPositions[:, 1], 'g+')
         # Draw center
-        ax.plot(self.center[0], self.center[1], 'kx')
+        ax[0].plot(self.center[0], self.center[1], 'kx')
 
+        ax[1].plot([self.corners[0][0], self.corners[1][0]], [self.corners[0][1], self.corners[1][1]], 'b-')
+        ax[1].plot([self.corners[1][0], self.corners[3][0]], [self.corners[1][1], self.corners[3][1]], 'b-')
+        ax[1].plot([self.corners[3][0], self.corners[2][0]], [self.corners[3][1], self.corners[2][1]], 'b-')
+        ax[1].plot([self.corners[2][0], self.corners[0][0]], [self.corners[2][1], self.corners[0][1]], 'b-')
+        # Draw fiducial marks
+        ax[1].plot(self.fiducialMarks[:, 0], self.fiducialMarks[:, 1], 'ro')
+        # Draw ETROC positions
+        ax[1].plot(self.etrocPositions[:, 0], self.etrocPositions[:, 1], 'g+')
+        # Draw center
+        ax[1].plot(self.center[0], self.center[1], 'kx')
 
 ##########################################################################################
 def ComputePlacement_PCB(corners: np.array, module):
@@ -244,11 +280,14 @@ if __name__=='__main__':
     pcb.draw(ax[0])
 
     letters = ['A', 'B', 'C', 'D']
+    measPositions_ = []
+    measThetas_ = []
     for i, e in enumerate(ETROCs):
         x, y, theta = ComputeCenter_ETROC(e.fiducialMarks, letters[i])
+        measPositions_.append(np.asarray([x, y]))
         print(f'Real center is at: ({e.center[0]}, {e.center[1]}), theta: {ETROCrotations[i]}')
         print(f'Measured center is at: ({x}, {y}), theta: {theta}')
-
+    
 
     pcb_center, theta_rad, place_pos = ComputePlacement_PCB(pcb.fiducialMarks, 1)
     for i, epos in enumerate(pcb.etrocPositions):
