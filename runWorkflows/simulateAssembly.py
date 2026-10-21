@@ -1,28 +1,142 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 
-
+###################################################################################################
+###################################################################################################
+######################################## Constants ################################################
+nominalCorner0ETROC = np.asarray([-23.0/2.0, 21.0/2.0])
+nominalCorner1ETROC = np.asarray([-23.0/2.0, -21.0/2.0])
+nominalCorner2ETROC = np.asarray([23.0/2.0, 21.0/2.0])
+nominalCorner3ETROC = np.asarray([23.0/2.0, -21.0/2.0]) 
+nominalCornersETROC = np.array([nominalCorner0ETROC, nominalCorner1ETROC, nominalCorner2ETROC, nominalCorner3ETROC])
+nominalFiducial0ETROC = np.asarray([2.50, -1.0]) + nominalCorner0ETROC
+nominalFiducial1ETROC = np.asarray([2.50, -20.0]) + nominalCorner1ETROC
+nominalFiducial2ETROC = np.asarray([22.0, -1.0]) + nominalCorner2ETROC
+nominalFiducial3ETROC = np.asarray([22.0, -20.0]) + nominalCorner3ETROC
+nominalFiducialsETROC = np.array([nominalFiducial0ETROC, nominalFiducial1ETROC, nominalFiducial2ETROC, nominalFiducial3ETROC])
+ETROCPositionInChuckA = np.asarray([-100.0, 500.0])
+ETROCPositionInChuckB = np.asarray([-130.0, 500.0])
+ETROCPositionInChuckC = np.asarray([-160.0, 500.0])
+ETROCPositionInChuckD = np.asarray([-190.0, 500.0])
+ETROCPositionsInChuck = np.array([ETROCPositionInChuckA, ETROCPositionInChuckB, ETROCPositionInChuckC, ETROCPositionInChuckD])
+nominalCorner0PCB = np.asarray([-57.5/2.0, 44.1/2.0])
+nominalCorner1PCB = np.asarray([-57.5/2.0, -44.1/2.0])
+nominalCorner2PCB = np.asarray([57.5/2.0, 44.1/2.0])
+nominalCorner3PCB = np.asarray([57.5/2.0, -44.1/2.0])
+nominalCornersPCB = np.array([nominalCorner0PCB, nominalCorner1PCB, nominalCorner2PCB, nominalCorner3PCB])
+nominalFiducial0PCB = np.asarray([2.0, -2.5]) + nominalCorner0PCB
+nominalFiducial1PCB = np.asarray([2.0, -41.6]) + nominalCorner1PCB
+nominalFiducial2PCB = np.asarray([55.5, -2.5]) + nominalCorner2PCB
+nominalFiducial3PCB = np.asarray([55.5, -41.6]) + nominalCorner3PCB
+nominalFiducialsPCB = np.array([nominalFiducial0PCB, nominalFiducial1PCB, nominalFiducial2PCB, nominalFiducial3PCB])
+PCBPositionInChuck = np.asarray([-100.0, -500.0])
+etroc_gap = 0.2
+ETROCPositionInPCBA = nominalCorner0ETROC + np.asarray([-etroc_gap/2.0, etroc_gap/2.0])
+ETROCPositionInPCBB = nominalCorner1ETROC + np.asarray([-etroc_gap/2.0, -etroc_gap/2.0])
+ETROCPositionInPCBC = nominalCorner2ETROC + np.asarray([etroc_gap/2.0, etroc_gap/2.0])
+ETROCPositionInPCBD = nominalCorner3ETROC + np.asarray([etroc_gap/2.0, -etroc_gap/2.0])
+ETROCPositionsInPCB = np.array([ETROCPositionInPCBA, ETROCPositionInPCBB, ETROCPositionInPCBC, ETROCPositionInPCBD])
+###################################################################################################
 mm = 1.0
 ETROC_CENTER_CORRECTION = [0.00*mm, 0.00*mm]
 ETROC_SIZE = [23*mm, 21*mm]
 ETROC_GAP = 0.2*mm
 # CORRECTION = [0*mm, -0.5*mm]
 CORRECTION = [0*mm, 0*mm]
-
-
-nominal0ETROC = np.asarray([2.50, -1.0]) + np.asarray([-23.0/2.0, 21.0/2.0])
-nominal1ETROC = np.asarray([2.50, -20.0]) + np.asarray([-23.0/2.0, 21.0/2.0])
-nominal2ETROC = np.asarray([22.0, -1.0]) + np.asarray([-23.0/2.0, 21.0/2.0])
-nominal3ETROC = np.asarray([22.0, -20.0]) + np.asarray([-23.0/2.0, 21.0/2.0])
-
-
-nominal0PCB = np.asarray([2.0, -2.5]) + np.asarray([-57.5/2.0, 44.1/2.0])
-nominal1PCB = np.asarray([2.0, -41.6]) + np.asarray([-57.5/2.0, 44.1/2.0])
-nominal2PCB = np.asarray([55.5, -2.5]) + np.asarray([-57.5/2.0, 44.1/2.0])
-nominal3PCB = np.asarray([55.5, -41.6]) + np.asarray([-57.5/2.0, 44.1/2.0])
+###################################################################################################
+###################################################################################################
+###################################################################################################
 
 
 
+
+class ETROC:
+
+    def __init__(self, corners, fiducialMarks):
+        
+        self.nomCorners = corners
+        self.nomFiducialMarks = fiducialMarks
+        self.nomCenter = np.asarray([0.0, 0.0])
+        for c in self.nomCorners:
+            self.nomCenter += c
+        self.nomCenter /= len(self.nomCorners)
+        
+        self.corners = np.array([np.asarray([0.0, 0.0]) for i in range(len(corners))])
+        self.fiducialMarks = np.array([np.asarray([0.0, 0.0]) for i in range(len(fiducialMarks))])
+        self.center = np.asarray([0.0, 0.0])
+        
+
+    def move(self, p, theta):
+
+        rotation = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+        for i, c in enumerate(self.nomCorners):
+            print(p)
+            print(rotation)
+            print(c)
+            self.corners[i] = p + rotation @ c
+        for i, f in enumerate(self.nomFiducialMarks):
+            self.fiducialMarks[i] = p + rotation @ f
+        self.center = p + rotation @ self.nomCenter
+
+
+    def draw(self, ax):
+        # Draw ETROC
+        ax.plot([self.corners[0][0], self.corners[1][0]], [self.corners[0][1], self.corners[1][1]], 'b-')
+        ax.plot([self.corners[1][0], self.corners[2][0]], [self.corners[1][1], self.corners[2][1]], 'b-')
+        ax.plot([self.corners[2][0], self.corners[3][0]], [self.corners[2][1], self.corners[3][1]], 'b-')
+        ax.plot([self.corners[3][0], self.corners[0][0]], [self.corners[3][1], self.corners[0][1]], 'b-')
+        # Draw fiducial marks
+        ax.plot(self.fiducialMarks[:, 0], self.fiducialMarks[:, 1], 'ro')
+        # Draw center
+        ax.plot(self.center[0], self.center[1], 'kx')
+
+
+class PCB:
+
+    def __init__(self, corners, fiducialMarks, etrocPositions):
+        
+        self.nomCorners = corners
+        self.nomFiducialMarks = fiducialMarks
+        self.nomCenter = np.asarray([0.0, 0.0])
+        self.nomEtrocPositions = etrocPositions
+        for c in self.nomCorners:
+            self.nomCenter += c
+        self.nomCenter /= len(self.nomCorners)
+        
+        self.corners = np.array([np.asarray([0.0, 0.0]) for i in range(len(corners))])
+        self.fiducialMarks = np.array([np.asarray([0.0, 0.0]) for i in range(len(fiducialMarks))])
+        self.center = np.asarray([0.0, 0.0])
+        self.etrocPositions = np.array([np.asarray([0.0, 0.0]) for i in range(len(etrocPositions))])
+
+
+    def move(self, p, theta):
+
+        rotation = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+        for i, c in enumerate(self.nomCorners):
+            self.corners[i] = p + rotation @ c
+        for i, f in enumerate(self.nomFiducialMarks):
+            self.fiducialMarks[i] = p + rotation @ f
+        for i, e in enumerate(self.nomEtrocPositions):
+            self.etrocPositions[i] = p + rotation @ e
+        self.center = p + rotation @ self.nomCenter
+
+
+    def draw(self, ax):
+        # Draw PCB
+        ax.plot([self.corners[0][0], self.corners[1][0]], [self.corners[0][1], self.corners[1][1]], 'b-')
+        ax.plot([self.corners[1][0], self.corners[2][0]], [self.corners[1][1], self.corners[2][1]], 'b-')
+        ax.plot([self.corners[2][0], self.corners[3][0]], [self.corners[2][1], self.corners[3][1]], 'b-')
+        ax.plot([self.corners[3][0], self.corners[0][0]], [self.corners[3][1], self.corners[0][1]], 'b-')
+        # Draw fiducial marks
+        ax.plot(self.fiducialMarks[:, 0], self.fiducialMarks[:, 1], 'ro')
+        # Draw ETROC positions
+        ax.plot(self.etrocPositions[:, 0], self.etrocPositions[:, 1], 'g+')
+        # Draw center
+        ax.plot(self.center[0], self.center[1], 'kx')
+
+
+##########################################################################################
 def ComputePlacement_PCB(corners: np.array, module):
     place_pos = {}
 
@@ -95,65 +209,37 @@ def ComputeCenter_ETROC(corners: np.array, etroc_letter):
 
     return [center[0], center[1], theta_rad]
 
-
-
-
-
-def realPositionETROC(d, r):
-
-    P0ETROC = d + r @ nominal0ETROC
-    P1ETROC = d + r @ nominal1ETROC
-    P2ETROC = d + r @ nominal2ETROC
-    P3ETROC = d + r @ nominal3ETROC
-
-    return np.array([P0ETROC, P1ETROC, P2ETROC, P3ETROC])
-
-
-def realPositionPCB(d, r):
-
-    P0PCB = d + r @ nominal0PCB
-    P1PCB = d + r @ nominal1PCB
-    P2PCB = d + r @ nominal2PCB
-    P3PCB = d + r @ nominal3PCB
-
-    return np.array([P0PCB, P1PCB, P2PCB, P3PCB])
-
-
-
+######################################################################################
 
 if __name__=='__main__':
 
-    ETROC_theta_rad = -0.005
-    ETROC_rotation = np.array([
-        [np.cos(ETROC_theta_rad), -np.sin(ETROC_theta_rad)],
-        [np.sin(ETROC_theta_rad), np.cos(ETROC_theta_rad)]
-        ])
-    ETROC_pos = np.asarray([100.0, -500.0])
 
-    PCB_theta_rad = -0.00
-    PCB_rotation = np.array([
-        [np.cos(PCB_theta_rad), -np.sin(PCB_theta_rad)],
-        [np.sin(PCB_theta_rad), np.cos(PCB_theta_rad)]
-        ])
-    PCB_pos = np.asarray([-100.0, -500.0])
+    ETROCs = []
+    ETROCshifts = np.asarray([np.asarray([0.1, -0.1]), np.asarray([0.2, 0.1]), np.asarray([-0.05, 0.0]), np.asarray([-0.2, -0.2])])
+    ETROCrotations = [0.01, -0.02, 0.005, -0.01]
+    for i in range(4):
+        e = ETROC(nominalCornersETROC, nominalFiducialsETROC)
+        e.move(ETROCPositionsInChuck[i] + ETROCshifts[i], ETROCrotations[i])
+        ETROCs.append(e)
 
 
-    ETROC_pos = realPositionETROC(ETROC_pos, ETROC_rotation)
-    PCB_pos = realPositionPCB(PCB_pos, PCB_rotation)
+    PCBshifts = np.asarray([0.1, -0.1])   
+    PCBrotation = -0.001
+    pcb = PCB(nominalCornersPCB, nominalFiducialsPCB, ETROCPositionsInPCB)
+    pcb.move(PCBPositionInChuck + PCBshifts, PCBrotation)
+   
 
 
-    for i, pos in enumerate(ETROC_pos):
-        print(f'ETROC {i}: ({pos[0]}, {pos[1]})')
-    for i, pos in enumerate(PCB_pos):
-        print(f'PCB {i}: ({pos[0]}, {pos[1]})')
-        
+    fig, ax = plt.subplots(1, 2, figsize=(10, 10))
 
-    center, angle, pos = ComputePlacement_PCB(PCB_pos, '1')
-    print(center)
-    print(angle)
-    for i in pos.items():
-        print(i)
+    for e in ETROCs:
+        e.draw(ax[0])
+    pcb.draw(ax[0])
 
+    plt.show()
+
+
+   
 
 
 
