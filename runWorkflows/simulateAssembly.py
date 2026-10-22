@@ -105,7 +105,7 @@ class ETROC:
         ax[0].plot([self.corners[3][0], self.corners[2][0]], [self.corners[3][1], self.corners[2][1]], 'b-')
         ax[0].plot([self.corners[2][0], self.corners[0][0]], [self.corners[2][1], self.corners[0][1]], 'b-')
         # Draw fiducial marks
-        ax[1].plot(self.fiducialMarks[:, 0], self.fiducialMarks[:, 1], 'ro')
+        ax[0].plot(self.fiducialMarks[:, 0], self.fiducialMarks[:, 1], 'ro')
         # Draw center
         ax[0].plot(self.center[0], self.center[1], 'kx')
 
@@ -272,22 +272,17 @@ if __name__=='__main__':
     pcb.move(PCBPositionInChuck + PCBshifts, PCBrotation)
    
 
-
-    fig, ax = plt.subplots(1, 2, figsize=(20, 10))
-
-    for e in ETROCs:
-        e.draw(ax[0])
-    pcb.draw(ax[0])
-
     letters = ['A', 'B', 'C', 'D']
     measPositions_ = []
     measThetas_ = []
     for i, e in enumerate(ETROCs):
         x, y, theta = ComputeCenter_ETROC(e.fiducialMarks, letters[i])
         measPositions_.append(np.asarray([x, y]))
+        measThetas_.append(theta)
         print(f'Real center is at: ({e.center[0]}, {e.center[1]}), theta: {ETROCrotations[i]}')
         print(f'Measured center is at: ({x}, {y}), theta: {theta}')
-    
+    measPositions = np.array(measPositions_)
+    measThetas = np.array(measThetas_)
 
     pcb_center, theta_rad, place_pos = ComputePlacement_PCB(pcb.fiducialMarks, 1)
     for i, epos in enumerate(pcb.etrocPositions):
@@ -295,7 +290,19 @@ if __name__=='__main__':
         name = f'PCB_1{letters[i]}'
         print(f'Measured ETROC positions: ({place_pos[name][0]}, {place_pos[name][1]})')
 
-  
+    for i, e in enumerate(ETROCs):
+        point = np.asarray([place_pos[f'PCB_1{letters[i]}'][0], place_pos[f'PCB_1{letters[i]}'][1]])
+        e.updatePosition(measPositions[i], -measThetas[i], point)
+
+
+
+
+    fig, ax = plt.subplots(1, 2, figsize=(20, 10))
+
+    for e in ETROCs:
+        e.draw(ax)
+    pcb.draw(ax)
+    
     plt.show()
 
 
