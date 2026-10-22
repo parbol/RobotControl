@@ -47,6 +47,7 @@ ETROCPositionsInPCB = np.array([ETROCPositionInPCBA, ETROCPositionInPCBB, ETROCP
 ###################################################################################################
 mm = 1.0
 ETROC_CENTER_CORRECTION = [-0.75*mm, 0.00*mm]
+#ETROC_CENTER_CORRECTION = [0.0*mm, 0.00*mm]
 ETROC_SIZE = [23*mm, 21*mm]
 ETROC_GAP = 0.2*mm
 # CORRECTION = [0*mm, -0.5*mm]
@@ -308,6 +309,7 @@ if __name__=='__main__':
         print(f'Measured center is at: ({x}, {y}), theta: {theta}')
     measPositions = np.array(measPositions_)
     measThetas = np.array(measThetas_)
+
 
     pcb_center, theta_rad, place_pos = ComputePlacement_PCB(pcb.fiducialMarks, 1)
     for i, epos in enumerate(pcb.etrocPositions):
