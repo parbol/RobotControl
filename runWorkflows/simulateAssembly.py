@@ -63,26 +63,23 @@ class ETROC:
 
     def __init__(self, corners, fiducialMarks, bands, type):
 
-        thecorners = []
-        thefiducials = []
-        thebands = []
+        
+        self.nomCorners = np.copy(corners)
+        self.nomFiducialMarks = np.copy(fiducialMarks)
+        self.nomBands = np.copy(bands)
+        self.nomCenter = np.asarray([0.0, 0.0])
+
         if type == 'C' or type == 'D':
+            print(type)
             theta = np.pi
             rotation = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
             for i, c in enumerate(corners):     
-                thecorners.append(rotation @ corners[i])
-                thefiducials.append(rotation @ fiducialMarks[i])
-                thebands.append(rotation @ bands[i])
+                
+                self.nomCorners[i] = rotation @ corners[i]
+                self.nomFiducialMarks[i] = rotation @ fiducialMarks[i]
+                self.nomBands[i] = rotation @ bands[i]
 
-        corners_ = np.asarray(thecorners)
-        fiducialMarks_ = np.asarray(thefiducials)
-        bands_ = np.asarray(thebands)       
-        
-        self.nomCorners = corners_
-        self.nomFiducialMarks = fiducialMarks_
-        self.nomCenter = np.asarray([0.0, 0.0])
-        self.nomBands = bands_
-        
+
         for c in self.nomCorners:
             self.nomCenter += c
         self.nomCenter /= len(self.nomCorners)
@@ -273,8 +270,8 @@ def ComputeCenter_ETROC(corners: np.array, etroc_letter):
     # Correction defined in ETROC reference frame (x', y')
     correction = np.array(ETROC_CENTER_CORRECTION, dtype=float)
     # A/B and C/D have opposite correction directions
-    if etroc_letter not in ("A", "B"):
-        correction = -correction
+    #if etroc_letter not in ("A", "B"):
+    #    correction = -correction
 
     # Rotate correction from ETROC frame (x', y') to robot frame (x, y)
     rotation = np.array([
@@ -335,8 +332,8 @@ if __name__=='__main__':
         point = np.asarray([place_pos[f'PCB_1{letters[i]}'][0], place_pos[f'PCB_1{letters[i]}'][1]])
         theta_pcb = place_pos[f'PCB_1{letters[i]}'][2]
         ftheta = theta_pcb - measThetas[i]
-        if i > 1:
-            ftheta = ftheta + np.pi           
+        #if i > 1:
+        #    ftheta = ftheta + np.pi           
         e.updatePosition(measPositions[i], ftheta, point)
 
     fig, ax = plt.subplots(1, 2, figsize=(20, 10))
