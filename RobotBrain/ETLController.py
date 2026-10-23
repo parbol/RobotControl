@@ -371,7 +371,6 @@ class ETLController:
         self.updateStatus()
         # Step in RZ to correct rotation
         self.safeMovement(x, y, safe_pos[2], -part_rotation_rz)
-        # self.stepRZ(-part_rotation_rz)
         self.updateStatus()
         
         is_picked = False
@@ -395,9 +394,13 @@ class ETLController:
             self.setVelocity(v)
             self.changeZ(self.safe_z)
 
-            result = input("Do you need to repeat the picking up process? (y/n) ")
-            if result.upper() == "N":
-                is_picked = True
+            while True:
+                result = input("Do you need to repeat the picking up process? (y/n) ").strip().upper()
+                if result == "N":
+                    is_picked = True
+                    break
+                elif result == "Y":
+                    break
         return True
 
     ##############################################################################

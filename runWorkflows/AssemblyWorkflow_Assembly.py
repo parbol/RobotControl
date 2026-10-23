@@ -104,7 +104,6 @@ if __name__ == "__main__":
         # Do assembly
         # Grab picker tool if not already
         etlcontroller.grabPickerTool()
-        # TODO
         for i_module in modules_to_perform_assembly:
             for i_etroc in ["A", "B", "C", "D"]:
             # for i_etroc in ["A"]:
@@ -119,6 +118,7 @@ if __name__ == "__main__":
         
         # Now 4 ETROCs are in each PCB
         # Put the cover plate on top but I do not have any fiducial mark
+        # TODO
     except Exception as e:
         print(e)
 
