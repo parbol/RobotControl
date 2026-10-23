@@ -61,12 +61,27 @@ CORRECTION = [0*mm, 0*mm]
 
 class ETROC:
 
-    def __init__(self, corners, fiducialMarks, bands):
+    def __init__(self, corners, fiducialMarks, bands, type):
+
+        thecorners = []
+        thefiducials = []
+        thebands = []
+        if type == 'C' or type == 'D':
+            theta = np.pi
+            rotation = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+            for i, c in enumerate(corners):     
+                thecorners.append(rotation @ corners[i])
+                thefiducials.append(rotation @ fiducialMarks[i])
+                thebands.append(rotation @ bands[i])
+
+        corners_ = np.asarray(thecorners)
+        fiducialMarks_ = np.asarray(thefiducials)
+        bands_ = np.asarray(thebands)       
         
-        self.nomCorners = corners
-        self.nomFiducialMarks = fiducialMarks
+        self.nomCorners = corners_
+        self.nomFiducialMarks = fiducialMarks_
         self.nomCenter = np.asarray([0.0, 0.0])
-        self.nomBands = bands
+        self.nomBands = bands_
         
         for c in self.nomCorners:
             self.nomCenter += c
@@ -258,8 +273,8 @@ def ComputeCenter_ETROC(corners: np.array, etroc_letter):
     # Correction defined in ETROC reference frame (x', y')
     correction = np.array(ETROC_CENTER_CORRECTION, dtype=float)
     # A/B and C/D have opposite correction directions
-    #if etroc_letter not in ("A", "B"):
-    #    correction = -correction
+    if etroc_letter not in ("A", "B"):
+        correction = -correction
 
     # Rotate correction from ETROC frame (x', y') to robot frame (x, y)
     rotation = np.array([
@@ -277,14 +292,14 @@ def ComputeCenter_ETROC(corners: np.array, etroc_letter):
 
 if __name__=='__main__':
 
-
+    letters = ['A', 'B', 'C', 'D']
     ETROCs = []
     #ETROCshifts = np.asarray([np.asarray([0.0, 0.0]), np.asarray([0.0, 0.0]), np.asarray([0.0, 0.0]), np.asarray([0.0, 0.0])])
     #ETROCrotations = [0.0, 0.0, 0.0, 0.0]
     ETROCshifts = np.asarray([np.asarray([0.1, -0.1]), np.asarray([0.2, 0.1]), np.asarray([-0.05, 0.0]), np.asarray([-0.2, -0.2])])
     ETROCrotations = [0.08, -0.08, 0.005, -0.1]
     for i in range(4):
-        e = ETROC(nominalCornersETROC, nominalFiducialsETROC, nominalBandsETROC)
+        e = ETROC(nominalCornersETROC, nominalFiducialsETROC, nominalBandsETROC, letters[i])
         e.move(ETROCPositionsInChuck[i] + ETROCshifts[i], ETROCrotations[i])
         ETROCs.append(e)
 
@@ -297,7 +312,6 @@ if __name__=='__main__':
     pcb.move(PCBPositionInChuck + PCBshifts, PCBrotation)
    
 
-    letters = ['A', 'B', 'C', 'D']
     measPositions_ = []
     measThetas_ = []
     for i, e in enumerate(ETROCs):
