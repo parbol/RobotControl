@@ -74,7 +74,6 @@ class ETROC:
             theta = np.pi
             rotation = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
             for i, c in enumerate(corners):     
-                
                 self.nomCorners[i] = rotation @ corners[i]
                 self.nomFiducialMarks[i] = rotation @ fiducialMarks[i]
                 self.nomBands[i] = rotation @ bands[i]
@@ -98,6 +97,7 @@ class ETROC:
         rotation = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
         for i, c in enumerate(self.nomCorners):     
             self.corners[i] = p + rotation @ c
+            print(self.corners[i])
         for i, f in enumerate(self.nomFiducialMarks):
             self.fiducialMarks[i] = p + rotation @ f
         for i, b in enumerate(self.nomBands):
@@ -106,7 +106,6 @@ class ETROC:
 
 
     def updatePosition(self, grabPoint, fakeTheta, finalPoint):
-
         rotation = np.array([[np.cos(fakeTheta), -np.sin(fakeTheta)], [np.sin(fakeTheta), np.cos(fakeTheta)]])
         for i, f in enumerate(self.corners):
             pos = f - grabPoint
@@ -303,8 +302,8 @@ if __name__=='__main__':
 
     PCBshifts = np.asarray([0.1, 0.1])   
     PCBrotation = 0.09
-    #PCBshifts = np.asarray([0.1, -0.1])   
-    #PCBrotation = -0.001
+    #PCBshifts = np.asarray([0.0, 0.0])   
+    #PCBrotation = 0.0
     pcb = PCB(nominalCornersPCB, nominalFiducialsPCB, ETROCPositionsInPCB)
     pcb.move(PCBPositionInChuck + PCBshifts, PCBrotation)
    
@@ -315,25 +314,20 @@ if __name__=='__main__':
         x, y, theta = ComputeCenter_ETROC(e.fiducialMarks, letters[i])
         measPositions_.append(np.asarray([x, y]))
         measThetas_.append(theta)
-        print(f'Checking ETROC {i}:')
-        print(f'Real center is at: ({e.center[0]}, {e.center[1]}), theta: {ETROCrotations[i]}')
-        print(f'Measured center is at: ({x}, {y}), theta: {theta}')
     measPositions = np.array(measPositions_)
     measThetas = np.array(measThetas_)
 
 
     pcb_center, theta_rad, place_pos = ComputePlacement_PCB(pcb.fiducialMarks, 1)
     for i, epos in enumerate(pcb.etrocPositions):
-        print(f'Real ETROC positions: ({epos[0]}, {epos[1]})')
         name = f'PCB_1{letters[i]}'
-        print(f'Measured ETROC positions: ({place_pos[name][0]}, {place_pos[name][1]})')
 
     for i, e in enumerate(ETROCs):
         point = np.asarray([place_pos[f'PCB_1{letters[i]}'][0], place_pos[f'PCB_1{letters[i]}'][1]])
         theta_pcb = place_pos[f'PCB_1{letters[i]}'][2]
         ftheta = theta_pcb - measThetas[i]
-        #if i > 1:
-        #    ftheta = ftheta + np.pi           
+        if i > 1:
+            ftheta = ftheta + np.pi           
         e.updatePosition(measPositions[i], ftheta, point)
 
     fig, ax = plt.subplots(1, 2, figsize=(20, 10))
