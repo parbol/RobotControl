@@ -48,7 +48,7 @@ ETROC_CENTER_CORRECTION = [-0.75*mm, 0.00*mm]
 ETROC_SIZE = [23*mm, 21*mm]
 ETROC_GAP = 0.2*mm
 # CORRECTION = [0*mm, -0.5*mm]
-CORRECTION = [0*mm, 0*mm]
+CORRECTION = [0*mm, 1.1*mm]
 
 
 def run_retakes(retake, etlcontroller, fiducial, path):
