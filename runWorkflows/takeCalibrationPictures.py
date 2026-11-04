@@ -31,7 +31,7 @@ if __name__ == "__main__":
     
     # Initialize Robot
     etlcontroller = ETLController(options.device, options.bauds, robotCamera, robot3D, False)
-    etlcontroller.camera.set_exposure(0.025)
+    etlcontroller.camera.set_exposure(0.030)
     
     # TODO - Define glue plate points position
     # Corner 0,0
